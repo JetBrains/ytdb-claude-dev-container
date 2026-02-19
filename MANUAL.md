@@ -9,16 +9,16 @@ development on Fedora/Plasma.
 - Docker Engine with Compose plugin (`docker compose`)
 - A GitHub Personal Access Token (fine-grained with **Contents: Read and write**,
   or classic with `repo` scope)
-- An Anthropic API key
+- An Anthropic account (interactive login on first container run)
 
 ## Quick Start
 
 ```bash
 cd ~/Projects/claude-code-docker
 
-# 1. Configure secrets (only API keys and git identity — no paths needed)
+# 1. Configure secrets (GitHub PAT and git identity — no paths needed)
 cp .env.example .env
-#    Edit .env — fill in ANTHROPIC_API_KEY, GITHUB_TOKEN, GIT_USER_NAME, GIT_USER_EMAIL
+#    Edit .env — fill in GITHUB_TOKEN, GIT_USER_NAME, GIT_USER_EMAIL
 
 # 2. Build the image (first time only; cached afterwards)
 docker compose build
@@ -105,22 +105,27 @@ same container:
 
 Open Claude Code from your current host directory without specifying paths.
 
-**Setup (one-time):** Add a shell alias to `~/.bashrc` or `~/.zshrc`:
+**Setup (one-time):** Add shell aliases to `~/.bashrc` or `~/.zshrc`:
 
 ```bash
-alias cc='~/Projects/claude-code-docker/claude.sh'
+alias claude-sandbox='~/Projects/claude-code-docker/claude.sh'
+alias claude-sandbox-start='~/Projects/claude-code-docker/start.sh ~/Projects'
+alias claude-sandbox-stop='~/Projects/claude-code-docker/stop.sh'
 ```
 
-**Usage:** The workspace path is picked up automatically from `./start.sh`:
+**Usage:** The workspace path is picked up automatically from `start.sh`:
 
 ```bash
 # Start the container once
-./start.sh ~/Projects
+claude-sandbox-start
 
-# Then from any terminal, just cd and run cc
-cd ~/Projects/ytdb/develop && cc
-cd ~/Projects/ytdb/feature-branch && cc
-cd ~/Projects/other-project && cc
+# Then from any terminal, just cd and run
+cd ~/Projects/ytdb/develop && claude-sandbox
+cd ~/Projects/ytdb/feature-branch && claude-sandbox
+cd ~/Projects/other-project && claude-sandbox
+
+# When done for the day
+claude-sandbox-stop
 ```
 
 The script maps your current host directory to the corresponding
@@ -268,7 +273,8 @@ The auth config (`.claude.json`) is synced to the `claude-data` volume every
 ### GitHub (git + gh CLI)
 
 The `GITHUB_TOKEN` environment variable (from `.env`) is passed into the
-container. The `gh` CLI uses it automatically — no `gh auth login` needed.
+container as both `GITHUB_TOKEN` and `GH_TOKEN` (the newer preferred name).
+The `gh` CLI uses it automatically — no `gh auth login` needed.
 On each container start, the entrypoint:
 
 1. Registers `gh` as the git credential helper via `gh auth setup-git`

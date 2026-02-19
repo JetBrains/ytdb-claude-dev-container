@@ -66,6 +66,19 @@ Claude Code is installed into `/opt/claude-npm` (a named Docker volume). On
 subsequent starts, the entrypoint checks for updates in the background without
 blocking startup.
 
+### Auth Persistence
+Claude Code's `.claude.json` (auth config) lives in the container filesystem at
+`/home/coder/.claude.json`. A symlink won't work because Claude Code does atomic
+writes (temp file + rename) which replace symlinks with regular files. Instead,
+the entrypoint restores `.claude.json` from the volume on start, and a background
+process syncs it back every 10 seconds. `claude.sh` also saves it after each
+session exit.
+
+### GitHub Token
+`GITHUB_TOKEN` is passed as an env var; `gh` CLI uses it automatically without
+`gh auth login`. Both `GITHUB_TOKEN` and `GH_TOKEN` are set in `docker exec`
+sessions since `docker exec` doesn't inherit compose environment variables.
+
 ## Code Style
 
 - Shell scripts: `bash`, `set -euo pipefail`, 2-space indent
