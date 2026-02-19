@@ -7,7 +7,6 @@ services:
     # Required for Docker-in-Docker; also allows mounting the host socket
     privileged: true
     environment:
-      - ANTHROPIC_API_KEY
       - GITHUB_TOKEN
       - GIT_USER_NAME
       - GIT_USER_EMAIL

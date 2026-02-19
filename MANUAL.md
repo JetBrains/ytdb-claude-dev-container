@@ -143,7 +143,6 @@ Set these in `.env` (loaded automatically by all scripts).
 
 | Variable | Required | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for Claude |
 | `GITHUB_TOKEN` | Yes | GitHub PAT for git HTTPS + `gh` CLI |
 | `GIT_USER_NAME` | Yes | Git author name |
 | `GIT_USER_EMAIL` | Yes | Git author email |
@@ -208,11 +207,17 @@ symlink without any path translation.
 | Volume | Container Path | Contents |
 |---|---|---|
 | `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation |
-| `claude-code-data` | `/home/coder/.claude` | Claude Code config and conversation history |
+| `claude-code-data` | `/home/coder/.claude` | Claude Code config, conversation history, and auth |
 
 These survive container restarts, image rebuilds, and `stop.sh`. Claude Code
 auto-updates on each container start — the npm package is checked in the
 background, so startup is not blocked.
+
+**Anthropic authentication** is handled by Claude Code's interactive login on
+first run. The auth config (`.claude.json`) is persisted into the `claude-data`
+volume via a background sync process — you only need to log in once. A periodic
+sync (every 10 seconds) plus a save-on-exit in `claude.sh` ensures the config
+survives container restarts.
 
 To reset Claude Code completely:
 
@@ -254,11 +259,20 @@ systemd-inhibit --list
 
 ## Authentication Flow
 
-On every container start, the entrypoint:
+### Anthropic (Claude Code)
 
-1. Authenticates `gh` CLI with your `GITHUB_TOKEN` via `gh auth login --with-token`
-2. Registers `gh` as the git credential helper via `gh auth setup-git`
-3. Sets the git protocol to HTTPS via `gh config set git_protocol https`
+Authenticate interactively on first run — the login prompt appears automatically.
+The auth config (`.claude.json`) is synced to the `claude-data` volume every
+10 seconds and on session exit, so it persists across container restarts.
+
+### GitHub (git + gh CLI)
+
+The `GITHUB_TOKEN` environment variable (from `.env`) is passed into the
+container. The `gh` CLI uses it automatically — no `gh auth login` needed.
+On each container start, the entrypoint:
+
+1. Registers `gh` as the git credential helper via `gh auth setup-git`
+2. Sets the git protocol to HTTPS via `gh config set git_protocol https`
 
 All git push/pull/clone operations and `gh` API calls use your PAT
 transparently. No SSH keys are needed.

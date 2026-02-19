@@ -43,4 +43,8 @@ CMD=("${@:-bash}")
 # Resolve the coder user's UID inside the container
 CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 
-docker exec -it -u "$CODER_UID" -w "$WORKDIR" "$CONTAINER" "${CMD[@]}"
+# docker exec doesn't inherit compose environment — pass what's needed
+docker exec -it -u "$CODER_UID" -w "$WORKDIR" \
+  -e HOME=/home/coder \
+  -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
+  "$CONTAINER" "${CMD[@]}"

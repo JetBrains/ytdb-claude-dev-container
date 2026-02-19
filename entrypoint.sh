@@ -24,6 +24,13 @@ CUR_GID=$(id -g coder)
 [ "$CUR_GID" != "$HOST_GID" ] && groupmod -g "$HOST_GID" coder 2>/dev/null || true
 [ "$CUR_UID" != "$HOST_UID" ] && usermod -u "$HOST_UID" coder 2>/dev/null || true
 
+# Restore .claude.json from the persistent volume (if previously saved).
+# We can't use a symlink because Claude Code does atomic writes (temp+rename)
+# which replace the symlink with a regular file outside the volume.
+if [ -f /home/coder/.claude/.claude.json.persist ]; then
+  cp /home/coder/.claude/.claude.json.persist /home/coder/.claude.json
+fi
+
 # Own the persistent volumes / home
 chown -R coder:coder /home/coder /opt/claude-npm
 echo "[ok] Running as UID=$(id -u coder) GID=$(id -g coder)"
@@ -53,15 +60,11 @@ echo "[ok] Git configured"
 
 # ── GitHub CLI auth (HTTPS + PAT) ────────────────────────────────────────────
 if [ -n "$GITHUB_TOKEN" ]; then
-  echo "$GITHUB_TOKEN" | gosu coder gh auth login --with-token 2>/dev/null
-  gosu coder gh auth setup-git 2>/dev/null
+  # gh CLI uses GITHUB_TOKEN env var automatically — no login needed.
+  # Just configure git to use gh as the credential helper for HTTPS.
+  gosu coder gh auth setup-git 2>/dev/null || true
   gosu coder gh config set git_protocol https 2>/dev/null || true
-  echo "[ok] GitHub CLI authenticated (HTTPS)"
-fi
-
-# ── Anthropic API key check ──────────────────────────────────────────────────
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "[WARN] ANTHROPIC_API_KEY is not set — Claude Code will not function without it"
+  echo "[ok] GitHub CLI authenticated (HTTPS via GITHUB_TOKEN)"
 fi
 
 # ── Claude Code install / update ─────────────────────────────────────────────
@@ -73,6 +76,13 @@ else
   gosu coder npm install -g @anthropic-ai/claude-code
   echo "[ok] Claude Code installed"
 fi
+
+# ── Periodic .claude.json sync to volume ─────────────────────────────────────
+# Runs in background; saves auth config every 10s so it survives restarts
+(while true; do
+  sleep 10
+  cp /home/coder/.claude.json /home/coder/.claude/.claude.json.persist 2>/dev/null || true
+done) &
 
 echo "=== Ready ==="
 echo ""

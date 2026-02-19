@@ -52,6 +52,12 @@ fi
 
 CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 
-exec docker exec -it -u "$CODER_UID" -w "$CONTAINER_DIR" \
-  -e ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
+# docker exec doesn't inherit compose environment — pass what's needed
+docker exec -it -u "$CODER_UID" -w "$CONTAINER_DIR" \
+  -e HOME=/home/coder \
+  -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
   "$CONTAINER" claude --dangerously-skip-permissions "$@"
+
+# Save .claude.json to the persistent volume after session ends
+docker exec "$CONTAINER" \
+  cp /home/coder/.claude.json /home/coder/.claude/.claude.json.persist 2>/dev/null || true
