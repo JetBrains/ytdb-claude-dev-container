@@ -1,0 +1,49 @@
+services:
+  claude:
+    build: .
+    image: claude-code-autonomous:latest
+    stdin_open: true
+    tty: true
+    # Required for Docker-in-Docker; also allows mounting the host socket
+    privileged: true
+    environment:
+      - ANTHROPIC_API_KEY
+      - GITHUB_TOKEN
+      - GIT_USER_NAME
+      - GIT_USER_EMAIL
+      - CLAUDE_TASK
+      - WORKSPACE_PATH
+    volumes:
+      # Persistent Claude Code npm installation (survives rebuilds)
+      - claude-npm:/opt/claude-npm
+      # Persistent Claude Code config / conversation history
+      - claude-data:/home/coder/.claude
+      # Project worktree — mounted at /workspace; a symlink from the host
+      # absolute path is created at startup so git worktree refs resolve
+      - ${WORKSPACE_PATH:-.}:/workspace
+      # Maven local repository (shared with host)
+      - ${MAVEN_REPO:-~/.m2}:/home/coder/.m2
+      # Docker socket from host (Docker-in-Docker via socket sharing)
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Default: idle process for multi-terminal workflow (start.sh + exec.sh)
+    # Overridden by run.sh for single-terminal interactive mode
+    command: ["sleep", "infinity"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Drop all incoming traffic, allow outgoing only
+    networks:
+      - egress-only
+
+networks:
+  egress-only:
+    driver: bridge
+    internal: false   # allows outbound internet
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"   # no inter-container traffic
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+
+volumes:
+  claude-npm:
+    name: claude-code-npm
+  claude-data:
+    name: claude-code-data
