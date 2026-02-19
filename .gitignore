@@ -1,2 +1,3 @@
 .env
 .inhibit.pid
+.workspace_path

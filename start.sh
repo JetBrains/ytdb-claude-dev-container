@@ -32,6 +32,9 @@ fi
 
 export WORKSPACE_PATH="$WORKSPACE"
 
+# Persist so claude.sh / exec.sh can read it without .env
+echo "$WORKSPACE" > "$SCRIPT_DIR/.workspace_path"
+
 echo "Claude Code Docker"
 echo "  Workspace : $WORKSPACE"
 echo ""

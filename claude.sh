@@ -23,8 +23,11 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 fi
 
 WORKSPACE_PATH="${WORKSPACE_PATH:-}"
+if [ -z "$WORKSPACE_PATH" ] && [ -f "$SCRIPT_DIR/.workspace_path" ]; then
+  WORKSPACE_PATH="$(cat "$SCRIPT_DIR/.workspace_path")"
+fi
 if [ -z "$WORKSPACE_PATH" ]; then
-  echo "Error: WORKSPACE_PATH not set. Add it to .env or export it." >&2
+  echo "Error: WORKSPACE_PATH not set. Run ./start.sh first or add it to .env." >&2
   exit 1
 fi
 

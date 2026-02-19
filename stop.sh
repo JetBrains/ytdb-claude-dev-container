@@ -12,4 +12,5 @@ if [ -f "$SCRIPT_DIR/.inhibit.pid" ]; then
 fi
 
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" down
+rm -f "$SCRIPT_DIR/.workspace_path"
 echo "Container stopped. Persistent volumes (npm, .claude, .m2) are preserved."

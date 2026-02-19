@@ -14,6 +14,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load .env for any config
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/.env"
+  set +a
+fi
+
 CONTAINER=$(docker compose -f "$SCRIPT_DIR/docker-compose.yml" ps -q claude 2>/dev/null)
 
 if [ -z "$CONTAINER" ]; then

@@ -81,6 +81,7 @@ blocking startup.
 - **docker-compose.yml**: Environment variables use passthrough syntax (`- VAR` not `- VAR=value`) so values come from the host/`.env`
 - **MANUAL.md**: Keep in sync with any behavioral changes. This is the user-facing documentation
 - **`.env` must never be committed** — it contains secrets. Only `.env.example` is tracked
+- **`.workspace_path`** is written by `start.sh` and read by `claude.sh`/`exec.sh`. Cleaned up by `stop.sh`. Never committed (in `.gitignore`)
 
 ## Testing Changes
 

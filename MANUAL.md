@@ -7,7 +7,8 @@ development on Fedora/Plasma.
 ## Prerequisites
 
 - Docker Engine with Compose plugin (`docker compose`)
-- A GitHub Personal Access Token (PAT) with `repo` and `read:org` scopes
+- A GitHub Personal Access Token (fine-grained with **Contents: Read and write**,
+  or classic with `repo` scope)
 - An Anthropic API key
 
 ## Quick Start
@@ -15,18 +16,18 @@ development on Fedora/Plasma.
 ```bash
 cd ~/Projects/claude-code-docker
 
-# 1. Configure secrets
+# 1. Configure secrets (only API keys and git identity — no paths needed)
 cp .env.example .env
 #    Edit .env — fill in ANTHROPIC_API_KEY, GITHUB_TOKEN, GIT_USER_NAME, GIT_USER_EMAIL
 
 # 2. Build the image (first time only; cached afterwards)
 docker compose build
 
-# 3a. Single-terminal mode — one worktree, interactive
+# 3a. Single-terminal mode — one project, interactive
 ./run.sh ~/Projects/ytdb/develop
 
-# 3b. Multi-terminal mode — multiple worktrees, persistent container
-./start.sh ~/Projects/ytdb
+# 3b. Multi-terminal mode — mount a parent directory, work across projects
+./start.sh ~/Projects
 ```
 
 ## Files Overview
@@ -35,7 +36,7 @@ docker compose build
 |---|---|
 | `Dockerfile` | Ubuntu 24.04 image with all dev tooling |
 | `docker-compose.yml` | Container orchestration, volumes, networking |
-| `entrypoint.sh` | Startup: UID matching, git/gh auth, Claude Code install |
+| `entrypoint.sh` | Startup: symlink, UID matching, git/gh auth, Claude Code install |
 | `.env.example` | Template for secrets and configuration |
 | `run.sh` | Single-terminal interactive launcher |
 | `start.sh` | Start container in background (multi-terminal) |
@@ -47,7 +48,7 @@ docker compose build
 
 ### Single-Terminal Mode
 
-Best for quick, focused work on a single worktree.
+Best for quick, focused work on a single project or worktree.
 
 ```bash
 ./run.sh ~/Projects/ytdb/develop
@@ -59,30 +60,36 @@ persistent volumes are kept.
 
 ### Multi-Terminal Mode
 
-Best for working on multiple worktrees simultaneously within one container.
+Best for working across multiple projects or worktrees simultaneously within
+one container.
 
-**Step 1 — Start the container.** Mount the parent directory containing all
-your git worktrees:
+**Step 1 — Start the container.** Mount a parent directory containing your
+projects:
 
 ```bash
+# All projects under ~/Projects
+./start.sh ~/Projects
+
+# Or just a specific repo with its worktrees
 ./start.sh ~/Projects/ytdb
 ```
 
-The container starts in the background. On Fedora/Plasma, system sleep is
-automatically inhibited while the container runs.
+The workspace path is saved automatically — no need to set it in `.env`.
+On Fedora/Plasma, system sleep is automatically inhibited while the container
+runs.
 
 **Step 2 — Open terminals.** Each call opens a new interactive session in the
 same container:
 
 ```bash
 # Claude Code in a specific worktree
-./exec.sh develop claude --dangerously-skip-permissions
+./exec.sh ytdb/develop claude --dangerously-skip-permissions
 
 # Claude Code in another worktree
-./exec.sh feature-branch claude --dangerously-skip-permissions
+./exec.sh ytdb/feature-branch claude --dangerously-skip-permissions
 
-# Plain bash shell in a worktree
-./exec.sh develop
+# Plain bash shell
+./exec.sh ytdb/develop
 
 # Bash at workspace root
 ./exec.sh
@@ -98,31 +105,27 @@ same container:
 
 Open Claude Code from your current host directory without specifying paths.
 
-**Setup (one-time):**
-
-1. Add `WORKSPACE_PATH` to your `.env`:
-   ```
-   WORKSPACE_PATH=/home/you/Projects/ytdb
-   ```
-
-2. Add a shell alias to `~/.bashrc` or `~/.zshrc`:
-   ```bash
-   alias cc='~/Projects/claude-code-docker/claude.sh'
-   ```
-
-**Usage:**
+**Setup (one-time):** Add a shell alias to `~/.bashrc` or `~/.zshrc`:
 
 ```bash
-cd ~/Projects/ytdb/develop
-cc                     # Claude Code opens at ~/Projects/ytdb/develop inside the container
-
-cd ~/Projects/ytdb/feature-branch
-cc                     # Claude Code opens at ~/Projects/ytdb/feature-branch
+alias cc='~/Projects/claude-code-docker/claude.sh'
 ```
 
-The workspace is mounted at the **same absolute path** inside the container, so
-your current directory maps directly. Requires the container to be running
-(`./start.sh`).
+**Usage:** The workspace path is picked up automatically from `./start.sh`:
+
+```bash
+# Start the container once
+./start.sh ~/Projects
+
+# Then from any terminal, just cd and run cc
+cd ~/Projects/ytdb/develop && cc
+cd ~/Projects/ytdb/feature-branch && cc
+cd ~/Projects/other-project && cc
+```
+
+The script maps your current host directory to the corresponding
+`/workspace/...` path inside the container. Requires the container to be
+running (`./start.sh`).
 
 ### Non-Interactive Task Mode
 
@@ -144,11 +147,14 @@ Set these in `.env` (loaded automatically by all scripts).
 | `GITHUB_TOKEN` | Yes | GitHub PAT for git HTTPS + `gh` CLI |
 | `GIT_USER_NAME` | Yes | Git author name |
 | `GIT_USER_EMAIL` | Yes | Git author email |
-| `WORKSPACE_PATH` | No | Default workspace directory (overridden by script arguments) |
 | `MAVEN_REPO` | No | Host Maven repo path (default: `~/.m2`) |
 | `HOST_UID` | No | Override auto-detected UID |
 | `HOST_GID` | No | Override auto-detected GID |
 | `CLAUDE_TASK` | No | Prompt for non-interactive mode |
+
+`WORKSPACE_PATH` is **not** needed in `.env`. It is determined automatically:
+- `start.sh` and `run.sh` accept it as a command-line argument
+- `start.sh` saves it to `.workspace_path` for `claude.sh` and `exec.sh`
 
 ## What's in the Image
 
@@ -168,10 +174,11 @@ Set these in `.env` (loaded automatically by all scripts).
 
 ### UID/GID Matching
 
-The container runs an entrypoint as root that:
+The default `ubuntu` user (UID 1000) is removed from the base image during
+build. A `coder` user is created at UID/GID 1000. At runtime, the entrypoint:
 
-1. Reads the UID/GID of the mounted workspace directory
-2. Adjusts the in-container `coder` user to match
+1. Reads the UID/GID of the mounted `/workspace` directory
+2. Adjusts the `coder` user to match via `usermod`/`groupmod`
 3. Runs all subsequent operations (git, gh, npm, claude) as `coder` via `gosu`
 
 This means every file Claude creates or modifies in your workspace is owned by
@@ -180,6 +187,21 @@ same reason.
 
 You can override auto-detection with `HOST_UID` and `HOST_GID` environment
 variables.
+
+### Git Worktree Support
+
+Git worktrees store absolute host paths in `.git` files (e.g.
+`gitdir: /home/you/Projects/ytdb/develop/.git/worktrees/feature-branch`).
+
+The workspace is mounted at `/workspace`. On startup, the entrypoint creates a
+symlink from the original host absolute path to `/workspace`:
+
+```
+/home/you/Projects -> /workspace   (symlink)
+```
+
+This ensures all git worktree cross-references resolve correctly through the
+symlink without any path translation.
 
 ### Persistent Volumes
 
@@ -202,15 +224,9 @@ docker volume rm claude-code-npm claude-code-data
 
 | Host Path | Container Path | Mode |
 |---|---|---|
-| `WORKSPACE_PATH` | `/workspace` + symlink from host path | read-write |
+| Workspace (from `start.sh` / `run.sh` argument) | `/workspace` + symlink from host path | read-write |
 | `~/.m2` (or `MAVEN_REPO`) | `/home/coder/.m2` | read-write |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | read-write |
-
-The workspace is mounted at `/workspace`. On startup, the entrypoint creates a
-symlink from the original host absolute path to `/workspace` (e.g.
-`/home/you/Projects/ytdb` -> `/workspace`). This ensures git worktree
-cross-references (which store absolute host paths in `.git` files) resolve
-correctly through the symlink.
 
 ### Networking
 
@@ -251,11 +267,12 @@ transparently. No SSH keys are needed.
 
 ### "WORKSPACE_PATH not set" when using `claude.sh`
 
-Add `WORKSPACE_PATH=/path/to/parent/dir` to `.env`.
+Run `./start.sh <path>` first — it saves the workspace path automatically.
+Or add `WORKSPACE_PATH=/path/to/parent/dir` to `.env` as a fallback.
 
 ### "container is not running" from `exec.sh` or `claude.sh`
 
-Start the container first: `./start.sh ~/Projects/ytdb`
+Start the container first: `./start.sh ~/Projects`
 
 ### Files owned by root in workspace
 
