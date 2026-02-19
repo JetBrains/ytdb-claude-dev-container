@@ -1,0 +1,93 @@
+# CLAUDE.md — ytdb-claude-dev-container
+
+## Project Overview
+
+Docker-based autonomous development container for running Claude Code against
+YouTrackDB (and other JVM/polyglot) projects. Provides a fully provisioned
+environment with UID matching, git worktree support, Docker-in-Docker, and
+persistent Claude Code installation.
+
+- **Repository**: https://github.com/JetBrains/ytdb-claude-dev-container
+- **License**: Apache 2.0
+
+## File Structure
+
+| File | Purpose |
+|---|---|
+| `Dockerfile` | Image definition: Ubuntu 24.04, Node.js 22, JDK 21, Docker CLI, gh, async-profiler 4.3 |
+| `docker-compose.yml` | Container orchestration: volumes, networking, environment |
+| `entrypoint.sh` | Startup logic: symlink creation, UID/GID matching, git/gh auth, Claude Code install |
+| `run.sh` | Single-terminal launcher (creates + removes container per session) |
+| `start.sh` | Background launcher for multi-terminal workflow |
+| `exec.sh` | Open a new shell/claude session in the running container |
+| `claude.sh` | Launch Claude Code mapped to your current host directory |
+| `stop.sh` | Stop container + release sleep inhibitor |
+| `.env.example` | Template for secrets and configuration |
+| `MANUAL.md` | Full user-facing documentation |
+
+## Build and Test
+
+```bash
+# Build the image
+docker compose build
+
+# Quick smoke test (no API key needed)
+WORKSPACE_PATH=/tmp GITHUB_TOKEN="" docker compose run --rm -e GITHUB_TOKEN="" \
+  claude bash -c 'id && node --version && java --version && git --version'
+
+# Full test with real config (.env must be populated)
+./start.sh ~/Projects/ytdb
+./exec.sh develop bash -c 'id && git worktree list | head -5'
+./stop.sh
+```
+
+## Key Architecture Decisions
+
+### UID/GID Matching
+The `ubuntu` user (UID 1000) is deleted from the base image in the Dockerfile.
+A `coder` user is created at UID/GID 1000. At runtime, the entrypoint adjusts
+`coder`'s UID/GID to match the mounted workspace owner via `usermod`/`groupmod`,
+then runs everything through `gosu coder`. This ensures files written by Claude
+Code are owned by the host user.
+
+### Git Worktree Symlink
+Git worktrees store absolute host paths in `.git` files. The workspace is mounted
+at `/workspace`, and the entrypoint creates a symlink from the host absolute path
+(e.g. `/home/user/Projects/ytdb`) to `/workspace`. This lets git resolve
+cross-worktree references without path translation.
+
+### Networking
+Egress-only by default: no published ports, inter-container communication
+disabled. Only outbound traffic (Anthropic API, GitHub, npm, Maven Central) is
+allowed.
+
+### Claude Code Persistence
+Claude Code is installed into `/opt/claude-npm` (a named Docker volume). On
+subsequent starts, the entrypoint checks for updates in the background without
+blocking startup.
+
+## Code Style
+
+- Shell scripts: `bash`, `set -euo pipefail`, 2-space indent
+- Use `gosu coder` for any operation that should run as the non-root user
+- Comments use `# ── Section ──` format with box-drawing characters for visual separation
+- All scripts include a usage header comment block
+
+## Editing Guidelines
+
+- **Dockerfile**: Keep layers cacheable — group related `apt-get` installs, always `rm -rf /var/lib/apt/lists/*`
+- **entrypoint.sh**: Runs as root, must be idempotent (container may restart). Use `2>/dev/null || true` for operations that may legitimately fail
+- **Shell scripts** (`run.sh`, `start.sh`, etc.): Must source `.env` if present, resolve paths to absolute, and give clear error messages
+- **docker-compose.yml**: Environment variables use passthrough syntax (`- VAR` not `- VAR=value`) so values come from the host/`.env`
+- **MANUAL.md**: Keep in sync with any behavioral changes. This is the user-facing documentation
+- **`.env` must never be committed** — it contains secrets. Only `.env.example` is tracked
+
+## Testing Changes
+
+After modifying the Dockerfile or entrypoint, always:
+
+1. Rebuild: `docker compose build`
+2. Verify UID: container user should match host UID (`id` inside container)
+3. Verify file write: `touch` a file in the workspace, check ownership on host
+4. Verify git: `git status` and `git worktree list` should work in any worktree
+5. Verify symlink: the host absolute path should resolve inside the container
