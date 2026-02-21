@@ -52,6 +52,13 @@ if [ -S /var/run/docker.sock ]; then
   echo "[ok] Docker socket available"
 fi
 
+# ── DNS firewall (domain whitelist) ──────────────────────────────────────────
+if [ "${DNS_FIREWALL:-true}" = "true" ]; then
+  /opt/scripts/setup-dns-firewall.sh
+else
+  echo "[ok] DNS firewall disabled"
+fi
+
 # ── Git setup (as coder) ────────────────────────────────────────────────────
 gosu coder git config --global --add safe.directory '*'
 [ -n "$GIT_USER_NAME" ]  && gosu coder git config --global user.name  "$GIT_USER_NAME"

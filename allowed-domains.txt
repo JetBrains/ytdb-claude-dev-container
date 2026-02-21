@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DNS Firewall — Allowed Domains
+#
+# One base domain per line. Subdomains are included automatically.
+# e.g. "apache.org" covers maven.apache.org, lucene.apache.org, etc.
+#
+# Lines starting with # are comments. Blank lines are ignored.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Claude Code infrastructure ───────────────────────────────────────────────
+anthropic.com
+sentry.io
+statsig.com
+
+# ── npm registry ─────────────────────────────────────────────────────────────
+npmjs.org
+npmjs.com
+
+# ── GitHub ───────────────────────────────────────────────────────────────────
+github.com
+githubusercontent.com
+githubassets.com
+github.io
+
+# ── Maven / Gradle build infrastructure ─────────────────────────────────────
+apache.org
+maven.org
+sonatype.org
+gradle.org
+
+# ── JVM documentation & runtimes ────────────────────────────────────────────
+oracle.com
+openjdk.org
+graalvm.org
+jetbrains.com
+jakarta.ee
+
+# ── General documentation ────────────────────────────────────────────────────
+stackoverflow.com
+baeldung.com
+w3.org
+graphql.org
+
+# ── Dependency repositories / docs ──────────────────────────────────────────
+mvnrepository.com
+
+# ── Databases & storage ─────────────────────────────────────────────────────
+neo4j.com
+rocksdb.org
+lmdb.tech
+
+# ── Networking & RPC ─────────────────────────────────────────────────────────
+netty.io
+grpc.io
+protobuf.dev
+
+# ── Testing frameworks ──────────────────────────────────────────────────────
+junit.org
+mockito.org
+jacoco.org
+testng.org
+testcontainers.org
+
+# ── Libraries & tools ───────────────────────────────────────────────────────
+slf4j.org
+qos.ch
+byte-buddy.net
+morethan.io
+guava.dev

@@ -155,6 +155,8 @@ Set these in `.env` (loaded automatically by all scripts).
 | `HOST_UID` | No | Override auto-detected UID |
 | `HOST_GID` | No | Override auto-detected GID |
 | `CLAUDE_TASK` | No | Prompt for non-interactive mode |
+| `DNS_FIREWALL` | No | Domain whitelist firewall (default: `true`). Set `false` to disable |
+| `EXTRA_ALLOWED_DOMAINS` | No | Comma-separated domains to add to the whitelist at runtime |
 
 `WORKSPACE_PATH` is **not** needed in `.env`. It is determined automatically:
 - `start.sh` and `run.sh` accept it as a command-line argument
@@ -173,6 +175,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | Python 3 | System | With pip and venv |
 | Build tools | gcc, g++, make | `build-essential` |
 | Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny | Common dev tools |
+| dnsmasq + iptables | System | DNS-based domain whitelist firewall |
 
 ## Architecture
 
@@ -236,14 +239,56 @@ docker volume rm claude-code-npm claude-code-data
 |---|---|---|
 | Workspace (from `start.sh` / `run.sh` argument) | `/workspace` + symlink from host path | read-write |
 | `~/.m2` (or `MAVEN_REPO`) | `/home/coder/.m2` | read-write |
+| `./allowed-domains.txt` | `/opt/scripts/allowed-domains.txt` | read-only |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | read-write |
 
 ### Networking
 
 - **Outbound only.** No ports are published; no incoming traffic is accepted.
 - Inter-container communication is disabled (`enable_icc: false`).
-- Outbound internet is available (Anthropic API, GitHub, npm, Maven Central).
 - `host.docker.internal` resolves to the host machine.
+
+### DNS Firewall (Domain Whitelist)
+
+By default, outbound network access is restricted to a whitelist of allowed
+domains. This prevents Claude Code from reaching arbitrary internet hosts.
+
+**How it works:**
+
+1. `dnsmasq` runs as a local DNS resolver on `127.0.0.1`
+2. It only resolves domains listed in `allowed-domains.txt`
+3. `iptables` rules block DNS queries to any external resolver
+4. Non-whitelisted domains fail to resolve — connections are refused
+
+**Allowed domains** include infrastructure (Anthropic API, GitHub, npm, Maven
+Central, Gradle) and documentation sites matching the project's `.claude/settings.json`
+WebFetch permissions. The full list is in `allowed-domains.txt`.
+
+**Editing the whitelist:**
+
+Edit `allowed-domains.txt` on the host (one base domain per line). Subdomains
+are included automatically — e.g. `apache.org` covers `maven.apache.org`,
+`lucene.apache.org`, etc. The file is bind-mounted into the container and a
+background watcher polls for changes every 10 seconds — dnsmasq is hot-reloaded
+automatically. No rebuild or restart needed.
+
+**Adding domains at runtime (one-off):**
+
+```bash
+# In .env or as an environment variable
+EXTRA_ALLOWED_DOMAINS=example.com,cooldb.io
+```
+
+These are appended to the file-based whitelist on container start.
+
+**Disabling the firewall:**
+
+```bash
+# In .env
+DNS_FIREWALL=false
+```
+
+Or pass it directly: `DNS_FIREWALL=false ./start.sh ~/Projects`
 
 ### Docker-in-Docker
 
@@ -317,6 +362,19 @@ ls -la /var/run/docker.sock
 
 First run installs Claude Code synchronously — this takes 30-60 seconds.
 Subsequent starts check for updates in the background without blocking.
+
+### Network request fails for a domain that should be allowed
+
+The domain (or its base domain) may be missing from `allowed-domains.txt`.
+Add it, rebuild (`docker compose build`), and restart the container.
+
+To test DNS resolution inside the container:
+
+```bash
+./exec.sh bash -c 'getent hosts example.com'
+```
+
+To temporarily disable the firewall: `DNS_FIREWALL=false ./start.sh ...`
 
 ### Stale sleep inhibitor after unclean shutdown
 

@@ -23,6 +23,8 @@ persistent Claude Code installation.
 | `claude.sh` | Launch Claude Code mapped to your current host directory |
 | `stop.sh` | Stop container + release sleep inhibitor |
 | `.env.example` | Template for secrets and configuration |
+| `allowed-domains.txt` | DNS firewall domain whitelist |
+| `setup-dns-firewall.sh` | DNS firewall setup (dnsmasq + iptables) |
 | `MANUAL.md` | Full user-facing documentation |
 
 ## Build and Test
@@ -58,8 +60,18 @@ cross-worktree references without path translation.
 
 ### Networking
 Egress-only by default: no published ports, inter-container communication
-disabled. Only outbound traffic (Anthropic API, GitHub, npm, Maven Central) is
-allowed.
+disabled.
+
+### DNS Firewall
+Outbound access is restricted to whitelisted domains via `dnsmasq` + `iptables`.
+`dnsmasq` runs on `127.0.0.1` and only resolves domains listed in
+`allowed-domains.txt`. `iptables` blocks external DNS to prevent bypassing.
+Controlled by `DNS_FIREWALL` env var (default `true`). Domains are base domains;
+subdomains are included automatically (e.g. `apache.org` covers
+`maven.apache.org`). The domains file is bind-mounted from the host; a background
+watcher polls mtime every 10s and hot-reloads dnsmasq on change.
+`EXTRA_ALLOWED_DOMAINS` env var accepts comma-separated domains appended at
+startup.
 
 ### Claude Code Persistence
 Claude Code is installed into `/opt/claude-npm` (a named Docker volume). On
@@ -93,6 +105,8 @@ sessions since `docker exec` doesn't inherit compose environment variables.
 - **Shell scripts** (`run.sh`, `start.sh`, etc.): Must source `.env` if present, resolve paths to absolute, and give clear error messages
 - **docker-compose.yml**: Environment variables use passthrough syntax (`- VAR` not `- VAR=value`) so values come from the host/`.env`
 - **MANUAL.md**: Keep in sync with any behavioral changes. This is the user-facing documentation
+- **`allowed-domains.txt`**: Edit to add/remove whitelisted domains. Rebuild image after changes
+- **`setup-dns-firewall.sh`**: Runs as root in the entrypoint. Must be idempotent
 - **`.env` must never be committed** — it contains secrets. Only `.env.example` is tracked
 - **`.workspace_path`** is written by `start.sh` and read by `claude.sh`/`exec.sh`. Cleaned up by `stop.sh`. Never committed (in `.gitignore`)
 

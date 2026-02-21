@@ -13,8 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3 python3-pip python3-venv \
     jq ripgrep fd-find tree unzip zip \
-    less vim-tiny tmux \
+    less vim-tiny nano tmux \
     sudo locales gosu \
+    dnsmasq iptables \
     && locale-gen en_US.UTF-8 \
     && ln -sf "$(which fdfind)" /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
@@ -77,7 +78,9 @@ RUN mkdir -p /opt/claude-npm /workspace /opt/scripts /home/coder/.claude \
     && chown -R coder:coder /opt/claude-npm /home/coder
 
 COPY entrypoint.sh /opt/scripts/entrypoint.sh
-RUN chmod +x /opt/scripts/entrypoint.sh
+COPY setup-dns-firewall.sh /opt/scripts/setup-dns-firewall.sh
+COPY allowed-domains.txt /opt/scripts/allowed-domains.txt
+RUN chmod +x /opt/scripts/entrypoint.sh /opt/scripts/setup-dns-firewall.sh
 
 WORKDIR /workspace
 ENTRYPOINT ["/opt/scripts/entrypoint.sh"]
