@@ -55,6 +55,7 @@ CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 # docker exec doesn't inherit compose environment — pass what's needed
 docker exec -it -u "$CODER_UID" -w "$CONTAINER_DIR" \
   -e HOME=/home/coder \
+  -e "TERM=${TERM:-xterm-256color}" \
   -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
   -e "GH_TOKEN=${GITHUB_TOKEN:-}" \
   "$CONTAINER" claude --dangerously-skip-permissions "$@"
