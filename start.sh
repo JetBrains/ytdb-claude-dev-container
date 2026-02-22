@@ -50,7 +50,7 @@ if command -v systemd-inhibit &>/dev/null; then
   if [ -f "$SCRIPT_DIR/.inhibit.pid" ]; then
     kill "$(cat "$SCRIPT_DIR/.inhibit.pid")" 2>/dev/null || true
   fi
-  systemd-inhibit --what=sleep:idle \
+  systemd-inhibit --what=sleep \
     --who="claude-code-docker" \
     --why="Claude Code container is running" \
     --mode=block sleep infinity &
