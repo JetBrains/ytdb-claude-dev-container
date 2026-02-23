@@ -239,7 +239,7 @@ docker volume rm claude-code-npm claude-code-data
 |---|---|---|
 | Workspace (from `start.sh` / `run.sh` argument) | `/workspace` + symlink from host path | read-write |
 | `~/.m2` (or `MAVEN_REPO`) | `/home/coder/.m2` | read-write |
-| `./allowed-domains.txt` | `/opt/scripts/allowed-domains.txt` | read-only |
+| `./config/` | `/opt/config/` | read-only |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | read-write |
 
 ### Networking
@@ -256,21 +256,22 @@ domains. This prevents Claude Code from reaching arbitrary internet hosts.
 **How it works:**
 
 1. `dnsmasq` runs as a local DNS resolver on `127.0.0.1`
-2. It only resolves domains listed in `allowed-domains.txt`
+2. It only resolves domains listed in `config/allowed-domains.txt`
 3. `iptables` rules block DNS queries to any external resolver
 4. Non-whitelisted domains fail to resolve — connections are refused
 
 **Allowed domains** include infrastructure (Anthropic API, GitHub, npm, Maven
 Central, Gradle) and documentation sites matching the project's `.claude/settings.json`
-WebFetch permissions. The full list is in `allowed-domains.txt`.
+WebFetch permissions. The full list is in `config/allowed-domains.txt`.
 
 **Editing the whitelist:**
 
-Edit `allowed-domains.txt` on the host (one base domain per line). Subdomains
-are included automatically — e.g. `apache.org` covers `maven.apache.org`,
-`lucene.apache.org`, etc. The file is bind-mounted into the container and a
-background watcher polls for changes every 10 seconds — dnsmasq is hot-reloaded
-automatically. No rebuild or restart needed.
+Edit `config/allowed-domains.txt` on the host (one base domain per line).
+Subdomains are included automatically — e.g. `apache.org` covers
+`maven.apache.org`, `lucene.apache.org`, etc. The `config/` directory is
+bind-mounted into the container (directory mounts, unlike file mounts, survive
+inode-replacing edits by editors). A background watcher polls for changes every
+10 seconds — dnsmasq is hot-reloaded automatically. No rebuild or restart needed.
 
 **Adding domains at runtime (one-off):**
 
@@ -365,8 +366,8 @@ Subsequent starts check for updates in the background without blocking.
 
 ### Network request fails for a domain that should be allowed
 
-The domain (or its base domain) may be missing from `allowed-domains.txt`.
-Add it, rebuild (`docker compose build`), and restart the container.
+The domain (or its base domain) may be missing from `config/allowed-domains.txt`.
+Add it — the change is hot-reloaded within ~10 seconds (no rebuild needed).
 
 To test DNS resolution inside the container:
 

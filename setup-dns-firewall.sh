@@ -5,7 +5,7 @@
 # Configures dnsmasq as a local resolver that only resolves whitelisted
 # domains, then applies iptables rules to force all DNS through it.
 #
-# Reads:  /opt/scripts/allowed-domains.txt  (bind-mounted or baked-in)
+# Reads:  /opt/config/allowed-domains.txt  (bind-mounted dir or baked-in)
 # Env:    EXTRA_ALLOWED_DOMAINS — comma-separated additional domains
 #
 # A background watcher polls the domains file every 10s and hot-reloads
@@ -15,7 +15,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-ALLOWED_DOMAINS_FILE="/opt/scripts/allowed-domains.txt"
+ALLOWED_DOMAINS_FILE="/opt/config/allowed-domains.txt"
 DNSMASQ_CONF="/etc/dnsmasq.d/whitelist.conf"
 UPSTREAM_DNS_FILE="/run/dns-firewall-upstream"
 

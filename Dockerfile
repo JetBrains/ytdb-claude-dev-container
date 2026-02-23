@@ -79,7 +79,7 @@ RUN mkdir -p /opt/claude-npm /workspace /opt/scripts /home/coder/.claude \
 
 COPY entrypoint.sh /opt/scripts/entrypoint.sh
 COPY setup-dns-firewall.sh /opt/scripts/setup-dns-firewall.sh
-COPY allowed-domains.txt /opt/scripts/allowed-domains.txt
+COPY config/allowed-domains.txt /opt/config/allowed-domains.txt
 RUN chmod +x /opt/scripts/entrypoint.sh /opt/scripts/setup-dns-firewall.sh
 
 WORKDIR /workspace

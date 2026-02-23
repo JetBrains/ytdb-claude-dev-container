@@ -63,6 +63,7 @@ fi
 gosu coder git config --global --add safe.directory '*'
 [ -n "$GIT_USER_NAME" ]  && gosu coder git config --global user.name  "$GIT_USER_NAME"
 [ -n "$GIT_USER_EMAIL" ] && gosu coder git config --global user.email "$GIT_USER_EMAIL"
+
 echo "[ok] Git configured"
 
 # ── GitHub CLI auth (HTTPS + PAT) ────────────────────────────────────────────

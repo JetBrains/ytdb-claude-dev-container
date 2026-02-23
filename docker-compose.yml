@@ -24,8 +24,9 @@ services:
       - ${WORKSPACE_PATH:-.}:/workspace
       # Maven local repository (shared with host)
       - ${MAVEN_REPO:-~/.m2}:/home/coder/.m2
-      # DNS firewall domain whitelist (edit on host, auto-reloads in ~10s)
-      - ./allowed-domains.txt:/opt/scripts/allowed-domains.txt:ro
+      # DNS firewall domain whitelist (directory mount so inode-replacing
+      # edits on the host are visible immediately — file mounts go stale)
+      - ./config:/opt/config:ro
       # Docker socket from host (Docker-in-Docker via socket sharing)
       - /var/run/docker.sock:/var/run/docker.sock
     # Default: idle process for multi-terminal workflow (start.sh + exec.sh)

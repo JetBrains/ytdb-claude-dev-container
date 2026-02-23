@@ -26,6 +26,7 @@ github.io
 apache.org
 maven.org
 sonatype.org
+sonatype.com
 gradle.org
 
 # ── JVM documentation & runtimes ────────────────────────────────────────────
@@ -54,12 +55,19 @@ netty.io
 grpc.io
 protobuf.dev
 
+# ── Docker Hub (image pulls / BuildKit metadata) ─────────────────────────────
+docker.io
+docker.com
+
 # ── Testing frameworks ──────────────────────────────────────────────────────
 junit.org
 mockito.org
 jacoco.org
 testng.org
 testcontainers.org
+
+# ── Code formatting (Spotless / Eclipse JDT) ─────────────────────────────────
+eclipse.org
 
 # ── Libraries & tools ───────────────────────────────────────────────────────
 slf4j.org
