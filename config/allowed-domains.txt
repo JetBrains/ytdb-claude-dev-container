@@ -68,6 +68,7 @@ testcontainers.org
 
 # ── Code formatting (Spotless / Eclipse JDT) ─────────────────────────────────
 eclipse.org
+eclipse.dev
 
 # ── Libraries & tools ───────────────────────────────────────────────────────
 slf4j.org
