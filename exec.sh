@@ -47,6 +47,7 @@ CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 docker exec -it -u "$CODER_UID" -w "$WORKDIR" \
   -e HOME=/home/coder \
   -e "TERM=${TERM:-xterm-256color}" \
+  -e "COLORTERM=${COLORTERM:-}" \
   -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
   -e "GH_TOKEN=${GITHUB_TOKEN:-}" \
   "$CONTAINER" "${CMD[@]}"

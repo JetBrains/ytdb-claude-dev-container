@@ -14,6 +14,8 @@ services:
       - WORKSPACE_PATH
       - DNS_FIREWALL
       - EXTRA_ALLOWED_DOMAINS
+      - TERM
+      - COLORTERM
     volumes:
       # Persistent Claude Code npm installation (survives rebuilds)
       - claude-npm:/opt/claude-npm
