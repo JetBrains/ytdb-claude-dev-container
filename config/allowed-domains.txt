@@ -32,6 +32,7 @@ gradle.org
 # ── JVM documentation & runtimes ────────────────────────────────────────────
 oracle.com
 openjdk.org
+adoptium.net
 graalvm.org
 jetbrains.com
 jakarta.ee
@@ -44,11 +45,15 @@ graphql.org
 
 # ── Dependency repositories / docs ──────────────────────────────────────────
 mvnrepository.com
+youtrackdb.io
 
 # ── Databases & storage ─────────────────────────────────────────────────────
 neo4j.com
 rocksdb.org
 lmdb.tech
+
+# ── Cloud storage ─────────────────────────────────────────────────────────────
+blob.core.windows.net
 
 # ── Networking & RPC ─────────────────────────────────────────────────────────
 netty.io

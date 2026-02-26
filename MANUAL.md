@@ -157,6 +157,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | `CLAUDE_TASK` | No | Prompt for non-interactive mode |
 | `DNS_FIREWALL` | No | Domain whitelist firewall (default: `true`). Set `false` to disable |
 | `EXTRA_ALLOWED_DOMAINS` | No | Comma-separated domains to add to the whitelist at runtime |
+| `CPU_LIMIT` | No | Max CPUs the container may use (default: 85% of host CPUs). Set `0` for unlimited |
 
 `WORKSPACE_PATH` is **not** needed in `.env`. It is determined automatically:
 - `start.sh` and `run.sh` accept it as a command-line argument
@@ -174,7 +175,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | async-profiler | 4.3 | Java profiler (`asprof` on PATH) |
 | Python 3 | System | With pip and venv |
 | Build tools | gcc, g++, make | `build-essential` |
-| Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny | Common dev tools |
+| Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, ping | Common dev tools |
 | dnsmasq + iptables | System | DNS-based domain whitelist firewall |
 
 ## Architecture
@@ -290,6 +291,23 @@ DNS_FIREWALL=false
 ```
 
 Or pass it directly: `DNS_FIREWALL=false ./start.sh ~/Projects`
+
+### CPU Limit
+
+By default, the container is capped at **85% of the host's CPUs** to prevent it
+from starving the host system. The limit is computed automatically by `start.sh`
+and `run.sh` using `nproc`. For example, on a 16-core machine the container gets
+at most 13.6 CPUs, leaving ~2.4 cores for the host OS and desktop.
+
+Override or disable via `.env` or environment variable:
+
+```bash
+# Custom limit (e.g. 8 CPUs)
+CPU_LIMIT=8
+
+# Disable limit entirely
+CPU_LIMIT=0
+```
 
 ### Docker-in-Docker
 

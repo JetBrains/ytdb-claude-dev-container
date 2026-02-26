@@ -32,6 +32,11 @@ fi
 
 export WORKSPACE_PATH="$WORKSPACE"
 
+# Compute CPU limit as 85% of host CPUs (prevents container from starving the host)
+if [ -z "${CPU_LIMIT:-}" ]; then
+  export CPU_LIMIT=$(awk "BEGIN {printf \"%.1f\", $(nproc) * 0.85}")
+fi
+
 # Persist so claude.sh / exec.sh can read it without .env
 echo "$WORKSPACE" > "$SCRIPT_DIR/.workspace_path"
 

@@ -6,6 +6,7 @@ services:
     tty: true
     # Required for Docker-in-Docker; also allows mounting the host socket
     privileged: true
+    cpus: ${CPU_LIMIT:-0}
     environment:
       - GITHUB_TOKEN
       - GIT_USER_NAME

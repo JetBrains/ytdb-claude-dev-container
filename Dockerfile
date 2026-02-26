@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq ripgrep fd-find tree unzip zip \
     less vim-tiny nano tmux \
     sudo locales gosu \
-    dnsmasq iptables \
+    dnsmasq iptables iputils-ping \
     && locale-gen en_US.UTF-8 \
     && ln -sf "$(which fdfind)" /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
@@ -51,10 +51,29 @@ RUN install -m 0755 -d /etc/apt/keyrings \
        docker-ce-cli docker-compose-plugin docker-buildx-plugin \
     && rm -rf /var/lib/apt/lists/*
 
-# ── JDK 21 ───────────────────────────────────────────────────────────────────
+# ── JDK 21 (default) ──────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk-headless \
     && rm -rf /var/lib/apt/lists/*
+
+# ── JDK 25 (Adoptium Temurin) ────────────────────────────────────────────────
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+         amd64) ADOPT_ARCH=x64 ;; \
+         arm64) ADOPT_ARCH=aarch64 ;; \
+         *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+       esac \
+    && curl -fsSL "https://api.adoptium.net/v3/binary/latest/25/ga/linux/${ADOPT_ARCH}/jdk/hotspot/normal/eclipse" \
+       -o /tmp/jdk25.tar.gz \
+    && mkdir -p /usr/lib/jvm/temurin-25 \
+    && tar xzf /tmp/jdk25.tar.gz -C /usr/lib/jvm/temurin-25 --strip-components=1 \
+    && rm /tmp/jdk25.tar.gz
+
+RUN ln -s /usr/lib/jvm/java-21-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-21
+
+ENV JAVA_HOME=/usr/lib/jvm/java-21
+ENV JAVA21_HOME=/usr/lib/jvm/java-21
+ENV JAVA25_HOME=/usr/lib/jvm/temurin-25
 
 # ── async-profiler 4.3 ────────────────────────────────────────────────────────
 RUN ARCH=$(dpkg --print-architecture) \
