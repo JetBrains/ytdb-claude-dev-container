@@ -312,15 +312,16 @@ CPU_LIMIT=0
 
 ### MCP Servers
 
-The container ships with
-[code-index-mcp](https://github.com/johnhuang316/code-index-mcp) pre-configured
-as an MCP server. It provides intelligent code indexing, search, and analysis
-capabilities to Claude Code.
+The container ships with the following MCP servers pre-configured:
 
-The server is registered in `~/.claude/settings.json` on first boot and launched
-on demand by Claude Code via `uvx code-index-mcp`. The `uv` package cache is
-stored in a persistent volume so the server starts quickly after the first
-download.
+| Server | Transport | Description |
+|---|---|---|
+| [code-index-mcp](https://github.com/johnhuang316/code-index-mcp) | `uvx code-index-mcp` | Intelligent code indexing, search, and analysis |
+| [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp) | `npx -y maven-indexer-mcp@latest` | Indexes `~/.m2` to search classes, signatures, and source in local Maven/Gradle dependencies |
+
+Servers are registered in `~/.claude/settings.json` on first boot and launched
+on demand by Claude Code. The `uv` package cache is stored in a persistent
+volume so Python-based servers start quickly after the first download.
 
 To add or remove MCP servers, edit `~/.claude/settings.json` inside the
 container, or modify the entrypoint section that writes the default config.

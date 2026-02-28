@@ -75,13 +75,17 @@ if [ -n "$GITHUB_TOKEN" ]; then
   echo "[ok] GitHub CLI authenticated (HTTPS via GITHUB_TOKEN)"
 fi
 
-# ── MCP servers (code-index-mcp) ─────────────────────────────────────────────
+# ── MCP servers ──────────────────────────────────────────────────────────────
 SETTINGS="/home/coder/.claude/settings.json"
 if [ ! -f "$SETTINGS" ]; then
   echo '{}' > "$SETTINGS"
 fi
 if ! jq -e '.mcpServers["code-index"]' "$SETTINGS" &>/dev/null; then
   jq '.mcpServers["code-index"] = {"command":"uvx","args":["code-index-mcp"]}' \
+    "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
+fi
+if ! jq -e '.mcpServers["maven-indexer"]' "$SETTINGS" &>/dev/null; then
+  jq '.mcpServers["maven-indexer"] = {"command":"npx","args":["-y","maven-indexer-mcp@latest"]}' \
     "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
 fi
 chown coder:coder "$SETTINGS"
