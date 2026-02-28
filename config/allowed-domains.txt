@@ -46,6 +46,7 @@ stackoverflow.com
 baeldung.com
 w3.org
 graphql.org
+dev.to
 
 # ── Dependency repositories / docs ──────────────────────────────────────────
 mvnrepository.com
@@ -55,6 +56,9 @@ youtrackdb.io
 neo4j.com
 rocksdb.org
 lmdb.tech
+postgrespro.com
+postgresql.org
+crunchydata.com
 
 # ── Cloud storage ─────────────────────────────────────────────────────────────
 blob.core.windows.net
