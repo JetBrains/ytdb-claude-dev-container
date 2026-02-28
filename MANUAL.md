@@ -318,6 +318,7 @@ The container ships with the following MCP servers pre-configured:
 |---|---|---|
 | [code-index-mcp](https://github.com/johnhuang316/code-index-mcp) | `uvx code-index-mcp` | Intelligent code indexing, search, and analysis |
 | [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp) | `npx -y maven-indexer-mcp@latest` | Indexes `~/.m2` to search classes, signatures, and source in local Maven/Gradle dependencies |
+| [maven-mcp](https://github.com/MavenSkills/mcp-server) | `java -jar …/maven-mcp-1.1.0.jar` | Runs Maven builds and returns concise Markdown instead of raw logs (~50x fewer tokens) |
 
 Servers are registered in `~/.claude/settings.json` on first boot and launched
 on demand by Claude Code. The `uv` package cache is stored in a persistent

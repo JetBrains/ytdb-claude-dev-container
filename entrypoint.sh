@@ -88,6 +88,20 @@ if ! jq -e '.mcpServers["maven-indexer"]' "$SETTINGS" &>/dev/null; then
   jq '.mcpServers["maven-indexer"] = {"command":"npx","args":["-y","maven-indexer-mcp@latest"]}' \
     "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
 fi
+# Maven MCP — download JAR to ~/.m2 if missing, then register
+MAVEN_MCP_VERSION="1.1.0"
+MAVEN_MCP_JAR="/home/coder/.m2/repository/io/github/mavenskills/maven-mcp/${MAVEN_MCP_VERSION}/maven-mcp-${MAVEN_MCP_VERSION}.jar"
+if [ ! -f "$MAVEN_MCP_JAR" ]; then
+  gosu coder mkdir -p "$(dirname "$MAVEN_MCP_JAR")"
+  gosu coder curl -fsSL \
+    "https://repo1.maven.org/maven2/io/github/mavenskills/maven-mcp/${MAVEN_MCP_VERSION}/maven-mcp-${MAVEN_MCP_VERSION}.jar" \
+    -o "$MAVEN_MCP_JAR" 2>/dev/null || true
+fi
+if ! jq -e '.mcpServers["maven"]' "$SETTINGS" &>/dev/null; then
+  jq --arg jar "$MAVEN_MCP_JAR" \
+    '.mcpServers["maven"] = {"command":"java","args":["-jar",$jar]}' \
+    "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
+fi
 chown coder:coder "$SETTINGS"
 chown -R coder:coder /home/coder/.cache 2>/dev/null || true
 echo "[ok] MCP servers configured"
