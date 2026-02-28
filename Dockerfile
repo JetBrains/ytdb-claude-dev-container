@@ -75,6 +75,10 @@ ENV JAVA_HOME=/usr/lib/jvm/java-21
 ENV JAVA21_HOME=/usr/lib/jvm/java-21
 ENV JAVA25_HOME=/usr/lib/jvm/temurin-25
 
+# ── uv (Python package runner — used by code-index-mcp) ──────────────────────
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+RUN ln -sf /usr/local/bin/uv /usr/local/bin/uvx
+
 # ── async-profiler 4.3 ────────────────────────────────────────────────────────
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \

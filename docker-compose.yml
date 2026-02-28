@@ -27,6 +27,8 @@ services:
       - ${WORKSPACE_PATH:-.}:/workspace
       # Maven local repository (shared with host)
       - ${MAVEN_REPO:-~/.m2}:/home/coder/.m2
+      # uv cache (persists MCP server packages across restarts)
+      - uv-cache:/home/coder/.cache/uv
       # DNS firewall domain whitelist (directory mount so inode-replacing
       # edits on the host are visible immediately — file mounts go stale)
       - ./config:/opt/config:ro
@@ -54,3 +56,5 @@ volumes:
     name: claude-code-npm
   claude-data:
     name: claude-code-data
+  uv-cache:
+    name: claude-code-uv-cache

@@ -173,7 +173,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | Git + git-lfs | System | With `gh` CLI for GitHub API |
 | Docker CLI | Latest | Compose + Buildx plugins |
 | async-profiler | 4.3 | Java profiler (`asprof` on PATH) |
-| Python 3 | System | With pip and venv |
+| Python 3 + uv | System | With pip, venv, and uv/uvx package runner |
 | Build tools | gcc, g++, make | `build-essential` |
 | Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, ping | Common dev tools |
 | dnsmasq + iptables | System | DNS-based domain whitelist firewall |
@@ -217,6 +217,7 @@ symlink without any path translation.
 |---|---|---|
 | `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation |
 | `claude-code-data` | `/home/coder/.claude` | Claude Code config, conversation history, and auth |
+| `claude-code-uv-cache` | `/home/coder/.cache/uv` | uv/uvx package cache (MCP server packages) |
 
 These survive container restarts, image rebuilds, and `stop.sh`. Claude Code
 auto-updates on each container start — the npm package is checked in the
@@ -308,6 +309,21 @@ CPU_LIMIT=8
 # Disable limit entirely
 CPU_LIMIT=0
 ```
+
+### MCP Servers
+
+The container ships with
+[code-index-mcp](https://github.com/johnhuang316/code-index-mcp) pre-configured
+as an MCP server. It provides intelligent code indexing, search, and analysis
+capabilities to Claude Code.
+
+The server is registered in `~/.claude/settings.json` on first boot and launched
+on demand by Claude Code via `uvx code-index-mcp`. The `uv` package cache is
+stored in a persistent volume so the server starts quickly after the first
+download.
+
+To add or remove MCP servers, edit `~/.claude/settings.json` inside the
+container, or modify the entrypoint section that writes the default config.
 
 ### Docker-in-Docker
 

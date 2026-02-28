@@ -16,6 +16,10 @@ statsig.com
 npmjs.org
 npmjs.com
 
+# ── PyPI (uv/uvx package downloads for MCP servers) ─────────────────────────
+pypi.org
+pythonhosted.org
+
 # ── GitHub ───────────────────────────────────────────────────────────────────
 github.com
 githubusercontent.com
