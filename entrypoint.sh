@@ -76,17 +76,19 @@ if [ -n "$GITHUB_TOKEN" ]; then
 fi
 
 # ── MCP servers ──────────────────────────────────────────────────────────────
-SETTINGS="/home/coder/.claude/settings.json"
-if [ ! -f "$SETTINGS" ]; then
-  echo '{}' > "$SETTINGS"
+# Claude Code reads MCP servers from ~/.claude.json (user scope), NOT from
+# ~/.claude/settings.json (which is for permissions/hooks).
+MCP_CFG="/home/coder/.claude.json"
+if [ ! -f "$MCP_CFG" ]; then
+  echo '{}' > "$MCP_CFG"
 fi
-if ! jq -e '.mcpServers["code-index"]' "$SETTINGS" &>/dev/null; then
+if ! jq -e '.mcpServers["code-index"]' "$MCP_CFG" &>/dev/null; then
   jq '.mcpServers["code-index"] = {"command":"uvx","args":["code-index-mcp"]}' \
-    "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
+    "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
 fi
-if ! jq -e '.mcpServers["maven-indexer"]' "$SETTINGS" &>/dev/null; then
+if ! jq -e '.mcpServers["maven-indexer"]' "$MCP_CFG" &>/dev/null; then
   jq '.mcpServers["maven-indexer"] = {"command":"npx","args":["-y","maven-indexer-mcp@latest"]}' \
-    "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
+    "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
 fi
 # Maven MCP — download JAR to ~/.m2 if missing, then register
 MAVEN_MCP_VERSION="1.1.0"
@@ -97,12 +99,12 @@ if [ ! -f "$MAVEN_MCP_JAR" ]; then
     "https://repo1.maven.org/maven2/io/github/mavenskills/maven-mcp/${MAVEN_MCP_VERSION}/maven-mcp-${MAVEN_MCP_VERSION}.jar" \
     -o "$MAVEN_MCP_JAR" 2>/dev/null || true
 fi
-if ! jq -e '.mcpServers["maven"]' "$SETTINGS" &>/dev/null; then
+if ! jq -e '.mcpServers["maven"]' "$MCP_CFG" &>/dev/null; then
   jq --arg jar "$MAVEN_MCP_JAR" \
     '.mcpServers["maven"] = {"command":"java","args":["-jar",$jar]}' \
-    "$SETTINGS" > "${SETTINGS}.tmp" && mv "${SETTINGS}.tmp" "$SETTINGS"
+    "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
 fi
-chown coder:coder "$SETTINGS"
+chown coder:coder "$MCP_CFG"
 chown -R coder:coder /home/coder/.cache 2>/dev/null || true
 echo "[ok] MCP servers configured"
 
