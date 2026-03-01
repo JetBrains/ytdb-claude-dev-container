@@ -113,6 +113,12 @@ sessions since `docker exec` doesn't inherit compose environment variables.
 
 ## Testing Changes
 
+**NEVER destroy the user's running Claude installation when testing.** Specifically:
+- **NEVER run `docker compose down -v`** — this deletes all named volumes including auth, conversation history, and cached packages
+- **NEVER remove `claude-code-data` or `claude-code-uv-cache` volumes** — they contain irreplaceable auth tokens and session history
+- For testing, always use `docker compose run --rm` with a throwaway container — this does not affect running containers or volumes
+- If a specific volume must be recreated (e.g. `claude-code-npm`), stop the container first with `docker compose stop`, then remove **only** that single volume by name with `docker volume rm`
+
 After modifying the Dockerfile or entrypoint, always:
 
 1. Rebuild: `docker compose build`

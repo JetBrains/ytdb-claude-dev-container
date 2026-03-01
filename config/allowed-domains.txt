@@ -9,6 +9,7 @@
 
 # ── Claude Code infrastructure ───────────────────────────────────────────────
 anthropic.com
+claude.com
 sentry.io
 statsig.com
 
