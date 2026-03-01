@@ -43,6 +43,7 @@ docker compose build
 | `exec.sh` | Open a new terminal in the running container |
 | `claude.sh` | Open Claude Code mapped to your current host directory |
 | `stop.sh` | Stop the container and release sleep inhibitor |
+| `lib/build.sh` | Shared build helper: auto-rebuilds stale images |
 
 ## Workflows
 
@@ -56,7 +57,9 @@ Best for quick, focused work on a single project or worktree.
 
 This builds the image (if needed), starts a temporary container, and drops you
 into an interactive Claude Code session. The container is removed on exit;
-persistent volumes are kept.
+persistent volumes are kept. If the image is older than 7 days, a full rebuild
+(`--pull --no-cache`) is triggered automatically to pick up OS and tooling
+updates.
 
 ### Multi-Terminal Mode
 
@@ -158,6 +161,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | `DNS_FIREWALL` | No | Domain whitelist firewall (default: `true`). Set `false` to disable |
 | `EXTRA_ALLOWED_DOMAINS` | No | Comma-separated domains to add to the whitelist at runtime |
 | `CPU_LIMIT` | No | Max CPUs the container may use (default: 85% of host CPUs). Set `0` for unlimited |
+| `IMAGE_MAX_AGE_DAYS` | No | Rebuild image if older than this many days (default: `7`). Set `0` to force rebuild every time |
 
 `WORKSPACE_PATH` is **not** needed in `.env`. It is determined automatically:
 - `start.sh` and `run.sh` accept it as a command-line argument
@@ -309,6 +313,25 @@ CPU_LIMIT=8
 # Disable limit entirely
 CPU_LIMIT=0
 ```
+
+### Auto-Rebuild on Stale Image
+
+Both `start.sh` and `run.sh` check the age of the `claude-code-autonomous:latest`
+image before every launch. If the image is older than **7 days**, a full rebuild
+is triggered with `--pull --no-cache` to pick up OS security patches, Node.js
+updates, `gh` CLI updates, and other tooling improvements. If the image is fresh,
+a fast cached build is used instead.
+
+The threshold is configurable:
+
+```bash
+# In .env or as an environment variable
+IMAGE_MAX_AGE_DAYS=14    # rebuild after 14 days instead of 7
+IMAGE_MAX_AGE_DAYS=0     # force a full rebuild every time
+```
+
+If the image doesn't exist at all (first run, or after `docker rmi`), a full
+build runs unconditionally.
 
 ### MCP Servers
 
