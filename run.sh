@@ -47,8 +47,9 @@ echo "Claude Code Docker"
 echo "  Workspace : $WORKSPACE"
 echo ""
 
-# Build image (quiet if already cached)
-docker compose -f "$SCRIPT_DIR/docker-compose.yml" build --quiet
+# Build image (full rebuild if older than IMAGE_MAX_AGE_DAYS)
+source "$SCRIPT_DIR/lib/build.sh"
+build_image_if_needed "$SCRIPT_DIR/docker-compose.yml"
 
 # Run interactively — overrides the default idle command, removed on exit
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm claude \

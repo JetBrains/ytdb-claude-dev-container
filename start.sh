@@ -44,7 +44,8 @@ echo "Claude Code Docker"
 echo "  Workspace : $WORKSPACE"
 echo ""
 
-docker compose -f "$SCRIPT_DIR/docker-compose.yml" build --quiet
+source "$SCRIPT_DIR/lib/build.sh"
+build_image_if_needed "$SCRIPT_DIR/docker-compose.yml"
 
 # Start in background with an idle process; exec.sh opens terminals
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
