@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     NPM_CONFIG_PREFIX=/opt/claude-npm \
-    PATH="/opt/async-profiler/bin:/opt/claude-npm/bin:${PATH}" \
+    PATH="/home/coder/.local/bin:/opt/async-profiler/bin:/opt/claude-npm/bin:${PATH}" \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8
 

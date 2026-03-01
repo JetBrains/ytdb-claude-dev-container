@@ -82,8 +82,11 @@ MCP_CFG="/home/coder/.claude.json"
 if [ ! -f "$MCP_CFG" ]; then
   echo '{}' > "$MCP_CFG"
 fi
-if ! jq -e '.mcpServers["code-index"]' "$MCP_CFG" &>/dev/null; then
-  jq '.mcpServers["code-index"] = {"command":"uvx","args":["code-index-mcp"]}' \
+# code-index-mcp: pre-install via uv tool so the server starts instantly
+# (uvx creates an ephemeral venv on every launch — too slow for MCP timeout)
+gosu coder uv tool install --upgrade code-index-mcp --quiet 2>/dev/null || true
+if ! jq -e '.mcpServers["code-index"].command == "code-index-mcp"' "$MCP_CFG" &>/dev/null; then
+  jq '.mcpServers["code-index"] = {"command":"code-index-mcp","args":[]}' \
     "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
 fi
 if ! jq -e '.mcpServers["maven-indexer"]' "$MCP_CFG" &>/dev/null; then
