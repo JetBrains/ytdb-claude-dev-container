@@ -114,10 +114,15 @@ echo "[ok] MCP servers configured"
 # ── Claude Code install / update ─────────────────────────────────────────────
 if gosu coder bash -c 'command -v claude' &>/dev/null; then
   echo "[ok] Claude Code found — checking for updates in background"
-  gosu coder npm update -g @anthropic-ai/claude-code &>/dev/null &
+  (gosu coder npm update -g @anthropic-ai/claude-code 2>/dev/null \
+    || { rm -rf /opt/claude-npm/lib/node_modules/@anthropic-ai 2>/dev/null
+         gosu coder npm install -g @anthropic-ai/claude-code; }) &>/dev/null &
 else
   echo "     Installing Claude Code (first run) ..."
-  gosu coder npm install -g @anthropic-ai/claude-code
+  gosu coder npm install -g @anthropic-ai/claude-code 2>/dev/null \
+    || { echo "     Cleaning stale npm volume and retrying..."
+         rm -rf /opt/claude-npm/lib/node_modules/@anthropic-ai
+         gosu coder npm install -g @anthropic-ai/claude-code; }
   echo "[ok] Claude Code installed"
 fi
 
