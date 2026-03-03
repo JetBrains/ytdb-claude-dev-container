@@ -82,33 +82,22 @@ MCP_CFG="/home/coder/.claude.json"
 if [ ! -f "$MCP_CFG" ]; then
   echo '{}' > "$MCP_CFG"
 fi
-# code-index-mcp: pre-install via uv tool so the server starts instantly
-# (uvx creates an ephemeral venv on every launch — too slow for MCP timeout)
-gosu coder uv tool install --upgrade code-index-mcp --quiet 2>/dev/null || true
-if ! jq -e '.mcpServers["code-index"].command == "code-index-mcp"' "$MCP_CFG" &>/dev/null; then
-  jq '.mcpServers["code-index"] = {"command":"code-index-mcp","args":[]}' \
-    "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
-fi
+# maven-indexer-mcp: indexes ~/.m2 JARs for class search, method signatures,
+# decompilation, and interface implementation discovery.
+# Pre-install globally so it starts instantly (npx -y downloads on every cold
+# start which can exceed MCP timeout).
+gosu coder npm install -g maven-indexer-mcp@latest --prefix /opt/claude-npm 2>/dev/null || true
 if ! jq -e '.mcpServers["maven-indexer"]' "$MCP_CFG" &>/dev/null; then
-  jq '.mcpServers["maven-indexer"] = {"command":"npx","args":["-y","maven-indexer-mcp@latest"]}' \
+  jq '.mcpServers["maven-indexer"] = {"command":"maven-indexer-mcp","args":[]}' \
     "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
 fi
-# Maven MCP — download JAR to ~/.m2 if missing, then register
-MAVEN_MCP_VERSION="1.1.0"
-MAVEN_MCP_JAR="/home/coder/.m2/repository/io/github/mavenskills/maven-mcp/${MAVEN_MCP_VERSION}/maven-mcp-${MAVEN_MCP_VERSION}.jar"
-if [ ! -f "$MAVEN_MCP_JAR" ]; then
-  gosu coder mkdir -p "$(dirname "$MAVEN_MCP_JAR")"
-  gosu coder curl -fsSL \
-    "https://repo1.maven.org/maven2/io/github/mavenskills/maven-mcp/${MAVEN_MCP_VERSION}/maven-mcp-${MAVEN_MCP_VERSION}.jar" \
-    -o "$MAVEN_MCP_JAR" 2>/dev/null || true
-fi
-if ! jq -e '.mcpServers["maven"]' "$MCP_CFG" &>/dev/null; then
-  jq --arg jar "$MAVEN_MCP_JAR" \
-    '.mcpServers["maven"] = {"command":"java","args":["-jar",$jar]}' \
-    "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
-fi
+# Remove stale MCP servers from previous versions
+for stale in "code-index" "maven"; do
+  if jq -e ".mcpServers[\"$stale\"]" "$MCP_CFG" &>/dev/null; then
+    jq "del(.mcpServers[\"$stale\"])" "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
+  fi
+done
 chown coder:coder "$MCP_CFG"
-chown -R coder:coder /home/coder/.cache 2>/dev/null || true
 echo "[ok] MCP servers configured"
 
 # ── Claude Code install / update ─────────────────────────────────────────────

@@ -177,7 +177,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | Git + git-lfs | System | With `gh` CLI for GitHub API |
 | Docker CLI | Latest | Compose + Buildx plugins |
 | async-profiler | 4.3 | Java profiler (`asprof` on PATH) |
-| Python 3 + uv | System | With pip, venv, and uv/uvx package runner |
+| Python 3 | System | With pip and venv |
 | Build tools | gcc, g++, make | `build-essential` |
 | Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, ping | Common dev tools |
 | dnsmasq + iptables | System | DNS-based domain whitelist firewall |
@@ -219,9 +219,8 @@ symlink without any path translation.
 
 | Volume | Container Path | Contents |
 |---|---|---|
-| `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation |
+| `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation (includes maven-indexer-mcp) |
 | `claude-code-data` | `/home/coder/.claude` | Claude Code config, conversation history, and auth |
-| `claude-code-uv-cache` | `/home/coder/.cache/uv` | uv/uvx package cache (MCP server packages) |
 
 These survive container restarts, image rebuilds, and `stop.sh`. Claude Code
 auto-updates on each container start — the npm package is checked in the
@@ -335,20 +334,18 @@ build runs unconditionally.
 
 ### MCP Servers
 
-The container ships with the following MCP servers pre-configured:
+The container ships with the following MCP server pre-configured:
 
 | Server | Transport | Description |
 |---|---|---|
-| [code-index-mcp](https://github.com/johnhuang316/code-index-mcp) | `uvx code-index-mcp` | Intelligent code indexing, search, and analysis |
-| [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp) | `npx -y maven-indexer-mcp@latest` | Indexes `~/.m2` to search classes, signatures, and source in local Maven/Gradle dependencies |
-| [maven-mcp](https://github.com/MavenSkills/mcp-server) | `java -jar …/maven-mcp-1.1.0.jar` | Runs Maven builds and returns concise Markdown instead of raw logs (~50x fewer tokens) |
+| [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp) | `maven-indexer-mcp` (pre-installed globally) | Indexes `~/.m2` to search classes, signatures, and source in local Maven/Gradle dependencies |
 
-Servers are registered in `~/.claude/settings.json` on first boot and launched
-on demand by Claude Code. The `uv` package cache is stored in a persistent
-volume so Python-based servers start quickly after the first download.
+The server is registered in `~/.claude.json` on first boot and launched on
+demand by Claude Code. It is pre-installed globally via npm (into the
+`claude-code-npm` volume) to avoid MCP startup timeout issues.
 
-To add or remove MCP servers, edit `~/.claude/settings.json` inside the
-container, or modify the entrypoint section that writes the default config.
+To add or remove MCP servers, edit `~/.claude.json` inside the container,
+or modify the entrypoint section that writes the default config.
 
 ### Docker-in-Docker
 

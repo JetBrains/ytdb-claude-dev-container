@@ -14,7 +14,7 @@ persistent Claude Code installation.
 
 | File | Purpose |
 |---|---|
-| `Dockerfile` | Image definition: Ubuntu 24.04, Node.js 22, JDK 21, uv, Docker CLI, gh, async-profiler 4.3 |
+| `Dockerfile` | Image definition: Ubuntu 24.04, Node.js 22, JDK 21, Docker CLI, gh, async-profiler 4.3 |
 | `docker-compose.yml` | Container orchestration: volumes, networking, environment |
 | `entrypoint.sh` | Startup logic: symlink creation, UID/GID matching, git/gh auth, MCP setup, Claude Code install |
 | `run.sh` | Single-terminal launcher (creates + removes container per session) |
