@@ -86,6 +86,11 @@ RUN ARCH=$(dpkg --print-architecture) \
        | tar xz -C /opt \
     && mv "/opt/async-profiler-4.3-linux-${AP_ARCH}" /opt/async-profiler
 
+# ── Hetzner Cloud CLI ──────────────────────────────────────────────────────
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL "https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-${ARCH}.tar.gz" \
+       | tar xz -C /usr/local/bin hcloud
+
 # ── Non-root user (UID/GID adjusted at runtime to match host) ────────────────
 # Remove the default 'ubuntu' user that occupies UID/GID 1000 in the base image
 RUN userdel -r ubuntu 2>/dev/null || true \

@@ -44,6 +44,7 @@ baeldung.com
 w3.org
 graphql.org
 dev.to
+arxiv.org
 
 # ── Dependency repositories / docs ──────────────────────────────────────────
 mvnrepository.com
@@ -87,3 +88,7 @@ byte-buddy.net
 morethan.io
 guava.dev
 errorprone.info
+
+# ── Hetzner Cloud ─────────────────────────────────────────────────────────
+hetzner.cloud
+hetzner.com
