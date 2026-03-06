@@ -15,6 +15,7 @@ services:
       - WORKSPACE_PATH
       - DNS_FIREWALL
       - EXTRA_ALLOWED_DOMAINS
+      - HCLOUD_TOKEN
       - TERM
       - COLORTERM
     volumes:

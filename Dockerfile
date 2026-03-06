@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq ripgrep fd-find tree unzip zip \
     less vim-tiny nano tmux \
     sudo locales gosu \
-    dnsmasq iptables iputils-ping \
+    dnsmasq iptables iputils-ping rsync \
     && locale-gen en_US.UTF-8 \
     && ln -sf "$(which fdfind)" /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
@@ -85,6 +85,11 @@ RUN ARCH=$(dpkg --print-architecture) \
     && curl -fsSL "https://github.com/async-profiler/async-profiler/releases/download/v4.3/async-profiler-4.3-linux-${AP_ARCH}.tar.gz" \
        | tar xz -C /opt \
     && mv "/opt/async-profiler-4.3-linux-${AP_ARCH}" /opt/async-profiler
+
+# ── Hetzner Cloud CLI ──────────────────────────────────────────────────────
+RUN ARCH=$(dpkg --print-architecture) \
+    && curl -fsSL "https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-${ARCH}.tar.gz" \
+       | tar xz -C /usr/local/bin hcloud
 
 # ── Non-root user (UID/GID adjusted at runtime to match host) ────────────────
 # Remove the default 'ubuntu' user that occupies UID/GID 1000 in the base image

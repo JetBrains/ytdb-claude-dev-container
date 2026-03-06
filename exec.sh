@@ -50,4 +50,5 @@ docker exec -it -u "$CODER_UID" -w "$WORKDIR" \
   -e "COLORTERM=${COLORTERM:-}" \
   -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
   -e "GH_TOKEN=${GITHUB_TOKEN:-}" \
+  -e "HCLOUD_TOKEN=${HCLOUD_TOKEN:-}" \
   "$CONTAINER" "${CMD[@]}"

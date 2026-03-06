@@ -160,6 +160,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | `CLAUDE_TASK` | No | Prompt for non-interactive mode |
 | `DNS_FIREWALL` | No | Domain whitelist firewall (default: `true`). Set `false` to disable |
 | `EXTRA_ALLOWED_DOMAINS` | No | Comma-separated domains to add to the whitelist at runtime |
+| `HCLOUD_TOKEN` | No | Hetzner Cloud API token for managing cloud nodes via `hcloud` CLI |
 | `CPU_LIMIT` | No | Max CPUs the container may use (default: 85% of host CPUs). Set `0` for unlimited |
 | `IMAGE_MAX_AGE_DAYS` | No | Rebuild image if older than this many days (default: `7`). Set `0` to force rebuild every time |
 
@@ -179,7 +180,8 @@ Set these in `.env` (loaded automatically by all scripts).
 | async-profiler | 4.3 | Java profiler (`asprof` on PATH) |
 | Python 3 | System | With pip and venv |
 | Build tools | gcc, g++, make | `build-essential` |
-| Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, ping | Common dev tools |
+| Hetzner Cloud CLI | Latest | `hcloud` — manage Hetzner Cloud servers, SSH keys, networks |
+| Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, rsync, ping | Common dev tools |
 | dnsmasq + iptables | System | DNS-based domain whitelist firewall |
 
 ## Architecture
