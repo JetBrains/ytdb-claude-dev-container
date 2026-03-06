@@ -100,6 +100,21 @@ done
 chown coder:coder "$MCP_CFG"
 echo "[ok] MCP servers configured"
 
+# ── Claude Code global permissions ────────────────────────────────────────
+# Allow all Bash commands globally so Claude Code doesn't prompt for each one.
+SETTINGS_DIR="/home/coder/.claude"
+SETTINGS_FILE="$SETTINGS_DIR/settings.json"
+mkdir -p "$SETTINGS_DIR"
+if [ ! -f "$SETTINGS_FILE" ]; then
+  echo '{}' > "$SETTINGS_FILE"
+fi
+if ! jq -e '.permissions.allow' "$SETTINGS_FILE" 2>/dev/null | grep -q '"Bash"'; then
+  jq '.permissions.allow = ((.permissions.allow // []) + ["Bash"] | unique)' \
+    "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+fi
+chown -R coder:coder "$SETTINGS_DIR"
+echo "[ok] Global permissions configured"
+
 # ── Claude Code install / update ─────────────────────────────────────────────
 if gosu coder bash -c 'command -v claude' &>/dev/null; then
   echo "[ok] Claude Code found — checking for updates in background"

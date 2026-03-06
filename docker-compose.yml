@@ -18,6 +18,7 @@ services:
       - HCLOUD_TOKEN
       - TERM
       - COLORTERM
+      - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
     volumes:
       # Persistent Claude Code npm installation (survives rebuilds)
       - claude-npm:/opt/claude-npm

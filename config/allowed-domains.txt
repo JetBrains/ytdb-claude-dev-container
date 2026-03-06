@@ -80,6 +80,11 @@ mockito.org
 jacoco.org
 testng.org
 testcontainers.org
+pitest.org
+arcmutate.com
+
+# ── External repositories ─────────────────────────────────────────────────
+surfsara.nl
 
 # ── Code formatting (Spotless / Eclipse JDT) ─────────────────────────────────
 eclipse.org
