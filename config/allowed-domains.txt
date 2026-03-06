@@ -17,6 +17,10 @@ statsig.com
 npmjs.org
 npmjs.com
 
+# ── PyPI ─────────────────────────────────────────────────────────────────────
+pypi.org
+pythonhosted.org
+
 # ── GitHub ───────────────────────────────────────────────────────────────────
 github.com
 githubusercontent.com
