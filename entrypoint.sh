@@ -3,13 +3,14 @@ set -e
 
 echo "=== Claude Code Container ==="
 
-# ── Symlink host absolute path → /workspace ──────────────────────────────────
-# Git worktrees store absolute host paths in .git files. This symlink ensures
-# those paths resolve correctly inside the container.
+# ── Symlink /workspace → host path ────────────────────────────────────────────
+# The workspace is mounted at $WORKSPACE_PATH (the host absolute path) so that
+# getcwd() returns paths matching git worktree .git metadata. A /workspace
+# symlink is created for convenience and backward compatibility.
 if [ -n "$WORKSPACE_PATH" ] && [ "$WORKSPACE_PATH" != "/workspace" ]; then
-  mkdir -p "$(dirname "$WORKSPACE_PATH")"
-  ln -sfn /workspace "$WORKSPACE_PATH"
-  echo "[ok] Symlink: $WORKSPACE_PATH -> /workspace"
+  rm -rf /workspace
+  ln -s "$WORKSPACE_PATH" /workspace
+  echo "[ok] Symlink: /workspace -> $WORKSPACE_PATH"
 fi
 
 # ── Match host UID/GID ───────────────────────────────────────────────────────
@@ -29,6 +30,28 @@ CUR_GID=$(id -g coder)
 # which replace the symlink with a regular file outside the volume.
 if [ -f /home/coder/.claude/.claude.json.persist ]; then
   cp /home/coder/.claude/.claude.json.persist /home/coder/.claude.json
+fi
+
+# ── Migrate Claude project history from /workspace to host path ──────────────
+# When WORKSPACE_PATH changes (e.g. /workspace → /home/user/Projects/ytdb),
+# Claude Code won't find old conversation history because it keys projects by
+# working directory path. Create symlinks so both old and new paths resolve.
+if [ -n "$WORKSPACE_PATH" ] && [ "$WORKSPACE_PATH" != "/workspace" ]; then
+  PROJECTS_DIR="/home/coder/.claude/projects"
+  if [ -d "$PROJECTS_DIR" ]; then
+    OLD_PREFIX="-workspace"
+    NEW_PREFIX=$(echo "$WORKSPACE_PATH" | tr '/' '-')
+    for old_dir in "$PROJECTS_DIR"/${OLD_PREFIX}*; do
+      [ -d "$old_dir" ] || continue
+      old_name="$(basename "$old_dir")"
+      suffix="${old_name#"$OLD_PREFIX"}"
+      new_name="${NEW_PREFIX}${suffix}"
+      if [ ! -e "$PROJECTS_DIR/$new_name" ]; then
+        ln -s "$old_name" "$PROJECTS_DIR/$new_name"
+        echo "[ok] Migrated project history: $old_name -> $new_name"
+      fi
+    done
+  fi
 fi
 
 # Own the persistent volumes / home

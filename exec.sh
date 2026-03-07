@@ -30,12 +30,19 @@ if [ -z "$CONTAINER" ]; then
   exit 1
 fi
 
+# Resolve WORKSPACE_PATH so working directory uses the host path inside the
+# container (matches git worktree metadata, required for Spotless ratcheting)
+WORKSPACE_PATH="${WORKSPACE_PATH:-}"
+if [ -z "$WORKSPACE_PATH" ] && [ -f "$SCRIPT_DIR/.workspace_path" ]; then
+  WORKSPACE_PATH="$(cat "$SCRIPT_DIR/.workspace_path")"
+fi
+
 SUBDIR="${1:-}"
 if [ -n "$SUBDIR" ]; then
   shift
-  WORKDIR="/workspace/$SUBDIR"
+  WORKDIR="${WORKSPACE_PATH:-/workspace}/$SUBDIR"
 else
-  WORKDIR="/workspace"
+  WORKDIR="${WORKSPACE_PATH:-/workspace}"
 fi
 
 CMD=("${@:-bash}")

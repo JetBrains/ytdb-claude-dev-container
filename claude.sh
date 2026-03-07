@@ -39,9 +39,10 @@ if [[ "$CWD" != "$WORKSPACE_PATH"* ]]; then
   exit 1
 fi
 
-# Map host path → container /workspace path
+# Map host path → container path (uses host path inside container so that
+# getcwd() matches git worktree metadata, required for Spotless ratcheting)
 REL_PATH="${CWD#"$WORKSPACE_PATH"}"
-CONTAINER_DIR="/workspace${REL_PATH}"
+CONTAINER_DIR="${WORKSPACE_PATH}${REL_PATH}"
 
 # Find running container
 CONTAINER=$(docker compose -f "$SCRIPT_DIR/docker-compose.yml" ps -q claude 2>/dev/null)

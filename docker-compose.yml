@@ -24,9 +24,10 @@ services:
       - claude-npm:/opt/claude-npm
       # Persistent Claude Code config / conversation history
       - claude-data:/home/coder/.claude
-      # Project worktree — mounted at /workspace; a symlink from the host
-      # absolute path is created at startup so git worktree refs resolve
-      - ${WORKSPACE_PATH:-.}:/workspace
+      # Project worktree — mounted at the host absolute path so that
+      # getcwd() returns paths matching git worktree metadata.
+      # A /workspace symlink is created at startup for convenience.
+      - ${WORKSPACE_PATH:-.}:${WORKSPACE_PATH:-/workspace}
       # Maven local repository (shared with host)
       - ${MAVEN_REPO:-~/.m2}:/home/coder/.m2
       # DNS firewall domain whitelist (directory mount so inode-replacing
