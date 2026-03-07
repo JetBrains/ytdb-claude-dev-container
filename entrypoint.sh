@@ -10,6 +10,7 @@ echo "=== Claude Code Container ==="
 if [ -n "$WORKSPACE_PATH" ] && [ "$WORKSPACE_PATH" != "/workspace" ]; then
   rm -rf /workspace
   ln -s "$WORKSPACE_PATH" /workspace
+  cd /workspace
   echo "[ok] Symlink: /workspace -> $WORKSPACE_PATH"
 fi
 
@@ -47,7 +48,7 @@ if [ -n "$WORKSPACE_PATH" ] && [ "$WORKSPACE_PATH" != "/workspace" ]; then
       suffix="${old_name#"$OLD_PREFIX"}"
       new_name="${NEW_PREFIX}${suffix}"
       if [ ! -e "$PROJECTS_DIR/$new_name" ]; then
-        ln -s "$old_name" "$PROJECTS_DIR/$new_name"
+        ln -s -- "$old_name" "$PROJECTS_DIR/$new_name"
         echo "[ok] Migrated project history: $old_name -> $new_name"
       fi
     done
