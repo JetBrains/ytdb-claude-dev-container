@@ -98,6 +98,10 @@ morethan.io
 guava.dev
 errorprone.info
 
+# ── Ubuntu package repositories ──────────────────────────────────────────
+ubuntu.com
+canonical.com
+
 # ── Hetzner Cloud ─────────────────────────────────────────────────────────
 hetzner.cloud
 hetzner.com
