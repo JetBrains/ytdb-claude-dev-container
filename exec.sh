@@ -8,7 +8,8 @@
 # Examples:
 #   ./exec.sh                              # bash in /workspace
 #   ./exec.sh develop                      # bash in /workspace/develop
-#   ./exec.sh develop claude --dangerously-skip-permissions
+#   ./exec.sh develop claude               # claude with --dangerously-skip-permissions
+#   ./exec.sh develop bash                 # explicit bash shell
 #   ./exec.sh feature-branch               # bash in /workspace/feature-branch
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -45,7 +46,17 @@ else
   WORKDIR="${WORKSPACE_PATH:-/workspace}"
 fi
 
+# Default to bash; auto-add --dangerously-skip-permissions when running claude
 CMD=("${@:-bash}")
+if [ "${CMD[0]}" = "claude" ]; then
+  HAS_SKIP=false
+  for arg in "${CMD[@]}"; do
+    [ "$arg" = "--dangerously-skip-permissions" ] && HAS_SKIP=true
+  done
+  if [ "$HAS_SKIP" = false ]; then
+    CMD=("claude" "--dangerously-skip-permissions" "${CMD[@]:1}")
+  fi
+fi
 
 # Resolve the coder user's UID inside the container
 CODER_UID=$(docker exec "$CONTAINER" id -u coder)
