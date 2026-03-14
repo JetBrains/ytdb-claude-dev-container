@@ -30,6 +30,10 @@ services:
       - ${WORKSPACE_PATH:-.}:${WORKSPACE_PATH:-/workspace}
       # Maven local repository (shared with host)
       - ${MAVEN_REPO:-~/.m2}:/home/coder/.m2
+      # Personal Claude Code skills from host (~/.claude/skills)
+      - ${CLAUDE_SKILLS_PATH:-~/.claude/skills}:/home/coder/.claude/skills
+      # Personal Claude Code commands from host (~/.claude/commands)
+      - ${CLAUDE_COMMANDS_PATH:-~/.claude/commands}:/home/coder/.claude/commands
       # DNS firewall domain whitelist (directory mount so inode-replacing
       # edits on the host are visible immediately — file mounts go stale)
       - ./config:/opt/config:ro
