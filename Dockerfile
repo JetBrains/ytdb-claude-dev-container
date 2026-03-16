@@ -51,10 +51,18 @@ RUN install -m 0755 -d /etc/apt/keyrings \
        docker-ce-cli docker-compose-plugin docker-buildx-plugin \
     && rm -rf /var/lib/apt/lists/*
 
-# ── JDK 21 (default) ──────────────────────────────────────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-21-jdk-headless \
-    && rm -rf /var/lib/apt/lists/*
+# ── JDK 21 (Adoptium Temurin, default) ────────────────────────────────────────
+RUN ARCH=$(dpkg --print-architecture) \
+    && case "$ARCH" in \
+         amd64) ADOPT_ARCH=x64 ;; \
+         arm64) ADOPT_ARCH=aarch64 ;; \
+         *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+       esac \
+    && curl -fsSL "https://api.adoptium.net/v3/binary/latest/21/ga/linux/${ADOPT_ARCH}/jdk/hotspot/normal/eclipse" \
+       -o /tmp/jdk21.tar.gz \
+    && mkdir -p /usr/lib/jvm/temurin-21 \
+    && tar xzf /tmp/jdk21.tar.gz -C /usr/lib/jvm/temurin-21 --strip-components=1 \
+    && rm /tmp/jdk21.tar.gz
 
 # ── JDK 25 (Adoptium Temurin) ────────────────────────────────────────────────
 RUN ARCH=$(dpkg --print-architecture) \
@@ -69,10 +77,8 @@ RUN ARCH=$(dpkg --print-architecture) \
     && tar xzf /tmp/jdk25.tar.gz -C /usr/lib/jvm/temurin-25 --strip-components=1 \
     && rm /tmp/jdk25.tar.gz
 
-RUN ln -s /usr/lib/jvm/java-21-openjdk-$(dpkg --print-architecture) /usr/lib/jvm/java-21
-
-ENV JAVA_HOME=/usr/lib/jvm/java-21
-ENV JAVA21_HOME=/usr/lib/jvm/java-21
+ENV JAVA_HOME=/usr/lib/jvm/temurin-21
+ENV JAVA21_HOME=/usr/lib/jvm/temurin-21
 ENV JAVA25_HOME=/usr/lib/jvm/temurin-25
 
 # ── async-profiler 4.3 ────────────────────────────────────────────────────────
