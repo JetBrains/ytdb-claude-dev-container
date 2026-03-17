@@ -24,6 +24,8 @@ persistent Claude Code installation.
 | `stop.sh` | Stop container + release sleep inhibitor |
 | `.env.example` | Template for secrets and configuration |
 | `config/allowed-domains.txt` | DNS firewall domain whitelist |
+| `config/mcp-servers.json` | Project-wide MCP server definitions (checked in) |
+| `config/mcp-servers.local.json` | User-specific MCP server overrides (gitignored) |
 | `setup-dns-firewall.sh` | DNS firewall setup (dnsmasq + iptables) |
 | `MANUAL.md` | Full user-facing documentation |
 
@@ -108,6 +110,8 @@ sessions since `docker exec` doesn't inherit compose environment variables.
 - **MANUAL.md**: Keep in sync with any behavioral changes. This is the user-facing documentation
 - **`config/allowed-domains.txt`**: Edit to add/remove whitelisted domains. Changes are hot-reloaded within ~10s (no rebuild needed)
 - **`config/allowed-domains.local.txt`**: Personal/project-specific domains (gitignored). Same format, also hot-reloaded
+- **`config/mcp-servers.json`**: Project-wide MCP server definitions. Has `mcpServers`, `npmInstall`, and `removeMcpServers` keys
+- **`config/mcp-servers.local.json`**: User-specific MCP overrides (gitignored). Same format; local entries win for same server name
 - **`setup-dns-firewall.sh`**: Runs as root in the entrypoint. Must be idempotent
 - **`.env` must never be committed** — it contains secrets. Only `.env.example` is tracked
 - **`.workspace_path`** is written by `start.sh` and read by `claude.sh`/`exec.sh`. Cleaned up by `stop.sh`. Never committed (in `.gitignore`)

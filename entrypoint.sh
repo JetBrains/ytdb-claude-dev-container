@@ -102,25 +102,42 @@ fi
 # ── MCP servers ──────────────────────────────────────────────────────────────
 # Claude Code reads MCP servers from ~/.claude.json (user scope), NOT from
 # ~/.claude/settings.json (which is for permissions/hooks).
+# Config is data-driven via config/mcp-servers.json (project, checked in) and
+# config/mcp-servers.local.json (user-specific, gitignored). Local overrides
+# project; both are merged into ~/.claude.json.
 MCP_CFG="/home/coder/.claude.json"
 if [ ! -f "$MCP_CFG" ]; then
   echo '{}' > "$MCP_CFG"
 fi
-# maven-indexer-mcp: indexes ~/.m2 JARs for class search, method signatures,
-# decompilation, and interface implementation discovery.
-# Pre-install globally so it starts instantly (npx -y downloads on every cold
-# start which can exceed MCP timeout).
-gosu coder npm install -g maven-indexer-mcp@latest --prefix /opt/claude-npm 2>/dev/null || true
-if ! jq -e '.mcpServers["maven-indexer"]' "$MCP_CFG" &>/dev/null; then
-  jq '.mcpServers["maven-indexer"] = {"command":"maven-indexer-mcp","args":[]}' \
-    "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
-fi
-# Remove stale MCP servers from previous versions
-for stale in "code-index" "maven"; do
-  if jq -e ".mcpServers[\"$stale\"]" "$MCP_CFG" &>/dev/null; then
-    jq "del(.mcpServers[\"$stale\"])" "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
-  fi
+
+MCP_CONFIG_DIR="/opt/config"
+MCP_PROJECT="${MCP_CONFIG_DIR}/mcp-servers.json"
+MCP_LOCAL="${MCP_CONFIG_DIR}/mcp-servers.local.json"
+
+# Process each config file (project first, then local overrides)
+for mcp_file in "$MCP_PROJECT" "$MCP_LOCAL"; do
+  [ -f "$mcp_file" ] || continue
+
+  # Pre-install npm packages so MCP servers start instantly
+  for pkg in $(jq -r '.npmInstall[]? // empty' "$mcp_file" 2>/dev/null); do
+    gosu coder npm install -g "$pkg" --prefix /opt/claude-npm 2>/dev/null || true
+  done
+
+  # Merge mcpServers into ~/.claude.json (add/overwrite per server)
+  for server in $(jq -r '.mcpServers // {} | keys[]' "$mcp_file" 2>/dev/null); do
+    server_cfg=$(jq -c ".mcpServers[\"$server\"]" "$mcp_file")
+    jq --arg name "$server" --argjson cfg "$server_cfg" \
+      '.mcpServers[$name] = $cfg' "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
+  done
+
+  # Remove stale MCP servers listed in removeMcpServers
+  for stale in $(jq -r '.removeMcpServers[]? // empty' "$mcp_file" 2>/dev/null); do
+    if jq -e ".mcpServers[\"$stale\"]" "$MCP_CFG" &>/dev/null; then
+      jq "del(.mcpServers[\"$stale\"])" "$MCP_CFG" > "${MCP_CFG}.tmp" && mv "${MCP_CFG}.tmp" "$MCP_CFG"
+    fi
+  done
 done
+
 chown coder:coder "$MCP_CFG"
 echo "[ok] MCP servers configured"
 

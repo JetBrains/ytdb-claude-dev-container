@@ -336,18 +336,39 @@ build runs unconditionally.
 
 ### MCP Servers
 
-The container ships with the following MCP server pre-configured:
+MCP server configuration is data-driven via two JSON files in the `config/`
+directory (bind-mounted read-only at `/opt/config`):
 
-| Server | Transport | Description |
+| File | Scope | Tracked in git? |
 |---|---|---|
-| [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp) | `maven-indexer-mcp` (pre-installed globally) | Indexes `~/.m2` to search classes, signatures, and source in local Maven/Gradle dependencies |
+| `config/mcp-servers.json` | Project-wide defaults | Yes |
+| `config/mcp-servers.local.json` | User-specific overrides | No (gitignored) |
 
-The server is registered in `~/.claude.json` on first boot and launched on
-demand by Claude Code. It is pre-installed globally via npm (into the
-`claude-code-npm` volume) to avoid MCP startup timeout issues.
+Both files share the same format:
 
-To add or remove MCP servers, edit `~/.claude.json` inside the container,
-or modify the entrypoint section that writes the default config.
+```json
+{
+  "npmInstall": ["maven-indexer-mcp@latest"],
+  "mcpServers": {
+    "maven-indexer": { "command": "maven-indexer-mcp", "args": [] }
+  },
+  "removeMcpServers": ["stale-server-name"]
+}
+```
+
+| Key | Purpose |
+|---|---|
+| `npmInstall` | npm packages to pre-install globally (avoids MCP startup timeout) |
+| `mcpServers` | Server definitions merged into `~/.claude.json` |
+| `removeMcpServers` | Server names to delete from `~/.claude.json` (cleanup of old entries) |
+
+At container start the entrypoint processes the project file first, then the
+local file. Local entries override project entries for the same server name.
+A template is provided at `config/mcp-servers.local.json.example`.
+
+The project ships with [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp)
+pre-configured, which indexes `~/.m2` JARs for class search, method signatures,
+decompilation, and interface implementation discovery.
 
 ### Docker-in-Docker
 

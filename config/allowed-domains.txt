@@ -106,3 +106,4 @@ canonical.com
 hetzner.cloud
 hetzner.com
 your-storagebox.de
+your-objectstorage.com

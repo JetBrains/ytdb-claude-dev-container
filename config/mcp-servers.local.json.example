@@ -1,0 +1,6 @@
+{
+  "_comment": "User-specific MCP servers (gitignored). Copy to mcp-servers.local.json and customize.",
+  "npmInstall": [],
+  "mcpServers": {},
+  "removeMcpServers": []
+}
