@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     less vim-tiny nano tmux \
     sudo locales gosu \
     dnsmasq iptables iputils-ping rsync \
+    sshpass expect \
     && locale-gen en_US.UTF-8 \
     && ln -sf "$(which fdfind)" /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
