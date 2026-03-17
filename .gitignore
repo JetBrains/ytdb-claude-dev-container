@@ -1,3 +1,4 @@
 .env
 .inhibit.pid
 .workspace_path
+config/allowed-domains.local.txt

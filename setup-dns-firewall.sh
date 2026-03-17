@@ -5,7 +5,8 @@
 # Configures dnsmasq as a local resolver that only resolves whitelisted
 # domains, then applies iptables rules to force all DNS through it.
 #
-# Reads:  /opt/config/allowed-domains.txt  (bind-mounted dir or baked-in)
+# Reads:  /opt/config/allowed-domains.txt        (bind-mounted dir or baked-in)
+#         /opt/config/allowed-domains.local.txt  (optional, gitignored)
 # Env:    EXTRA_ALLOWED_DOMAINS — comma-separated additional domains
 #
 # A background watcher polls the domains file every 10s and hot-reloads
@@ -16,6 +17,7 @@
 set -euo pipefail
 
 ALLOWED_DOMAINS_FILE="/opt/config/allowed-domains.txt"
+ALLOWED_DOMAINS_LOCAL="/opt/config/allowed-domains.local.txt"
 DNSMASQ_CONF="/etc/dnsmasq.d/whitelist.conf"
 UPSTREAM_DNS_FILE="/run/dns-firewall-upstream"
 
@@ -38,12 +40,15 @@ generate_config() {
   {
     echo "# Auto-generated domain whitelist"
 
-    # Domains from file
-    while IFS= read -r line; do
-      domain=$(echo "$line" | sed 's/#.*//' | tr -d '[:space:]')
-      [ -z "$domain" ] && continue
-      echo "server=/${domain}/${upstream}"
-    done < "$ALLOWED_DOMAINS_FILE"
+    # Domains from file(s)
+    for f in "$ALLOWED_DOMAINS_FILE" "$ALLOWED_DOMAINS_LOCAL"; do
+      [ -f "$f" ] || continue
+      while IFS= read -r line; do
+        domain=$(echo "$line" | sed 's/#.*//' | tr -d '[:space:]')
+        [ -z "$domain" ] && continue
+        echo "server=/${domain}/${upstream}"
+      done < "$f"
+    done
 
     # Extra domains from environment variable (comma-separated)
     if [ -n "${EXTRA_ALLOWED_DOMAINS:-}" ]; then
@@ -104,16 +109,19 @@ echo "[firewall] Domain whitelist active ($DOMAIN_COUNT domains)"
 # Polls mtime every 10s. inotify is unreliable on Docker bind mounts.
 (
   LAST_MTIME=$(stat -c '%Y' "$ALLOWED_DOMAINS_FILE" 2>/dev/null || echo 0)
+  LAST_MTIME_LOCAL=$(stat -c '%Y' "$ALLOWED_DOMAINS_LOCAL" 2>/dev/null || echo 0)
   while true; do
     sleep 10
     CUR_MTIME=$(stat -c '%Y' "$ALLOWED_DOMAINS_FILE" 2>/dev/null || echo 0)
-    if [ "$CUR_MTIME" != "$LAST_MTIME" ]; then
+    CUR_MTIME_LOCAL=$(stat -c '%Y' "$ALLOWED_DOMAINS_LOCAL" 2>/dev/null || echo 0)
+    if [ "$CUR_MTIME" != "$LAST_MTIME" ] || [ "$CUR_MTIME_LOCAL" != "$LAST_MTIME_LOCAL" ]; then
       NEW_COUNT=$(generate_config)
       # Restart dnsmasq to pick up new config
       kill "$(cat /run/dnsmasq.pid 2>/dev/null)" 2>/dev/null || true
       sleep 0.5
       dnsmasq
       LAST_MTIME="$CUR_MTIME"
+      LAST_MTIME_LOCAL="$CUR_MTIME_LOCAL"
       echo "[firewall] Reloaded — $NEW_COUNT domains (file changed)"
     fi
   done

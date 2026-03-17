@@ -107,6 +107,7 @@ sessions since `docker exec` doesn't inherit compose environment variables.
 - **docker-compose.yml**: Environment variables use passthrough syntax (`- VAR` not `- VAR=value`) so values come from the host/`.env`
 - **MANUAL.md**: Keep in sync with any behavioral changes. This is the user-facing documentation
 - **`config/allowed-domains.txt`**: Edit to add/remove whitelisted domains. Changes are hot-reloaded within ~10s (no rebuild needed)
+- **`config/allowed-domains.local.txt`**: Personal/project-specific domains (gitignored). Same format, also hot-reloaded
 - **`setup-dns-firewall.sh`**: Runs as root in the entrypoint. Must be idempotent
 - **`.env` must never be committed** — it contains secrets. Only `.env.example` is tracked
 - **`.workspace_path`** is written by `start.sh` and read by `claude.sh`/`exec.sh`. Cleaned up by `stop.sh`. Never committed (in `.gitignore`)
