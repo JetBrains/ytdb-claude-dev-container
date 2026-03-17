@@ -105,3 +105,4 @@ canonical.com
 # ── Hetzner Cloud ─────────────────────────────────────────────────────────
 hetzner.cloud
 hetzner.com
+your-storagebox.de
