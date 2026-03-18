@@ -107,3 +107,6 @@ hetzner.cloud
 hetzner.com
 your-storagebox.de
 your-objectstorage.com
+
+# ── WiredTiger ───────────────────────────────────────────────────────────────
+wiredtiger.com
