@@ -4,7 +4,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     NPM_CONFIG_PREFIX=/opt/claude-npm \
     PATH="/home/coder/.local/bin:/opt/async-profiler/bin:/opt/claude-npm/bin:${PATH}" \
     LANG=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8
+    LC_ALL=en_US.UTF-8 \
+    TZ=Europe/Prague
 
 # ── Base packages ────────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -18,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dnsmasq iptables iputils-ping rsync \
     sshpass expect \
     && locale-gen en_US.UTF-8 \
+    && ln -sf /usr/share/zoneinfo/Europe/Prague /etc/localtime \
+    && echo "Europe/Prague" > /etc/timezone \
     && ln -sf "$(which fdfind)" /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
