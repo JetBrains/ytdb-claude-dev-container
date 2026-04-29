@@ -110,3 +110,11 @@ your-objectstorage.com
 
 # ── WiredTiger ───────────────────────────────────────────────────────────────
 wiredtiger.com
+
+# ── PostgreSQL & SQL blogs ──────────────────────────────────────────────────
+richyen.com
+sqlpassion.at
+
+# ── Graph databases ─────────────────────────────────────────────────────────
+memgraph.com
+tigergraph.com
