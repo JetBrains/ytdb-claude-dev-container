@@ -32,6 +32,11 @@ fi
 
 export WORKSPACE_PATH="$WORKSPACE"
 
+# Pass the host user's home path so the container can mount ~/.m2 at the same
+# absolute path it has on the host. Required so absolute paths baked into
+# Maven caches (e.g. Equo P2 bundle-pool) resolve in both worlds.
+export HOST_HOME="$HOME"
+
 # Ensure personal skills/commands dirs exist (prevents Docker creating them as root)
 mkdir -p "${CLAUDE_SKILLS_PATH:-$HOME/.claude/skills}"
 mkdir -p "${CLAUDE_COMMANDS_PATH:-$HOME/.claude/commands}"

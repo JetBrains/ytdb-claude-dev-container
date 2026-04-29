@@ -55,7 +55,45 @@ if [ -n "$WORKSPACE_PATH" ] && [ "$WORKSPACE_PATH" != "/workspace" ]; then
   fi
 fi
 
-# Own the persistent volumes / home
+# ── Maven repo path alignment ────────────────────────────────────────────────
+# The Maven local repo is bind-mounted at $HOST_HOME/.m2 (the host user's home
+# path) so absolute paths cached by Maven plugins — notably Equo P2's
+# bundle-pool used by spotless-maven-plugin — resolve identically inside the
+# container and on the host. Without this, host-side IDE builds fail with
+# NoSuchFileException on /home/coder/.m2/... paths cached by container builds.
+HOST_HOME="${HOST_HOME:-/home/coder}"
+if [ "$HOST_HOME" != "/home/coder" ]; then
+  # Ensure the synthetic host home dir exists and is owned by coder (Docker
+  # creates the bind-mount parent as root)
+  mkdir -p "$HOST_HOME"
+  chown coder:coder "$HOST_HOME"
+
+  # Symlink coder's default ~/.m2 to the bind-mounted location so tools that
+  # read $HOME/.m2/settings.xml (Maven's default lookup path) still find it.
+  # The chown -R below is safe: GNU chown defaults to -P (don't dereference
+  # symlinks) under -R, so it lchowns the symlink itself rather than recursing
+  # into the (potentially huge) Maven cache.
+  rm -rf /home/coder/.m2
+  ln -s "$HOST_HOME/.m2" /home/coder/.m2
+
+  # Tell Maven to use the host-style absolute path. Anything Maven plugins
+  # bake into cache files (Equo P2 bundle-pool, etc.) will then reference
+  # $HOST_HOME/.m2/... — a path that exists on both host and container.
+  MAVEN_REPO_LOCAL="$HOST_HOME/.m2/repository"
+  export MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=$MAVEN_REPO_LOCAL"
+
+  # Persist for `docker exec` login shells (interactive sessions). Non-login
+  # exec sessions still need `-e MAVEN_OPTS=...` from exec.sh / claude.sh.
+  cat > /etc/profile.d/maven.sh <<EOF
+export MAVEN_OPTS="\${MAVEN_OPTS:-} -Dmaven.repo.local=$MAVEN_REPO_LOCAL"
+EOF
+  chmod 644 /etc/profile.d/maven.sh
+
+  echo "[ok] Maven repo aligned: $HOST_HOME/.m2 (symlinked from /home/coder/.m2)"
+fi
+
+# Own the persistent volumes / home. -R is safe here: chown without -L treats
+# symlinks as files (doesn't recurse into the maven cache via the symlink).
 chown -R coder:coder /home/coder /opt/claude-npm
 echo "[ok] Running as UID=$(id -u coder) GID=$(id -g coder)"
 

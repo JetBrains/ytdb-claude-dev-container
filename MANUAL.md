@@ -155,6 +155,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | `GIT_USER_NAME` | Yes | Git author name |
 | `GIT_USER_EMAIL` | Yes | Git author email |
 | `MAVEN_REPO` | No | Host Maven repo path (default: `~/.m2`) |
+| `HOST_HOME` | No | Host user's home path (default: `$HOME`, set automatically by `start.sh`/`run.sh`). Used as the in-container mount point for `~/.m2` so cached absolute paths match the host |
 | `HOST_UID` | No | Override auto-detected UID |
 | `HOST_GID` | No | Override auto-detected GID |
 | `CLAUDE_TASK` | No | Prompt for non-interactive mode |
@@ -198,6 +199,14 @@ build. A `coder` user is created at UID/GID 1000. At runtime, the entrypoint:
 This means every file Claude creates or modifies in your workspace is owned by
 **your host user**, not root. The Maven cache (`~/.m2`) works seamlessly for the
 same reason.
+
+The Maven repo is also bind-mounted at the **host's home path** inside the
+container (`$HOST_HOME/.m2`, with `/home/coder/.m2` as a symlink to it). This
+keeps absolute paths cached by Maven plugins — notably the Equo P2 bundle-pool
+used by `spotless-maven-plugin` — identical on host and in the container, so
+host-side IDE builds (IntelliJ) and container builds can share the same cache
+without `NoSuchFileException` on `/home/coder/...` paths. `MAVEN_OPTS` is set to
+`-Dmaven.repo.local=$HOST_HOME/.m2/repository` for this reason.
 
 You can override auto-detection with `HOST_UID` and `HOST_GID` environment
 variables.
@@ -245,7 +254,7 @@ docker volume rm claude-code-npm claude-code-data
 | Host Path | Container Path | Mode |
 |---|---|---|
 | Workspace (from `start.sh` / `run.sh` argument) | `/workspace` + symlink from host path | read-write |
-| `~/.m2` (or `MAVEN_REPO`) | `/home/coder/.m2` | read-write |
+| `~/.m2` (or `MAVEN_REPO`) | `$HOST_HOME/.m2` (symlinked from `/home/coder/.m2`) | read-write |
 | `./config/` | `/opt/config/` | read-only |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | read-write |
 

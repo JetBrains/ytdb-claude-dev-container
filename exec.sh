@@ -61,7 +61,9 @@ fi
 # Resolve the coder user's UID inside the container
 CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 
-# docker exec doesn't inherit compose environment — pass what's needed
+# docker exec doesn't inherit compose environment — pass what's needed.
+# MAVEN_OPTS pins maven.repo.local to the host-style path so absolute paths
+# baked into caches (Equo P2 bundle-pool, etc.) match the host.
 docker exec -it -u "$CODER_UID" -w "$WORKDIR" \
   -e HOME=/home/coder \
   -e "TERM=${TERM:-xterm-256color}" \
@@ -72,4 +74,5 @@ docker exec -it -u "$CODER_UID" -w "$WORKDIR" \
   -e "HETZNER_S3_ACCESS_KEY=${HETZNER_S3_ACCESS_KEY:-}" \
   -e "HETZNER_S3_SECRET_KEY=${HETZNER_S3_SECRET_KEY:-}" \
   -e "HETZNER_S3_ENDPOINT=${HETZNER_S3_ENDPOINT:-}" \
+  -e "MAVEN_OPTS=${MAVEN_OPTS:-} -Dmaven.repo.local=$HOME/.m2/repository" \
   "$CONTAINER" "${CMD[@]}"

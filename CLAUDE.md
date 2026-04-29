@@ -76,6 +76,24 @@ polls mtime every 10s and hot-reloads dnsmasq on change.
 `EXTRA_ALLOWED_DOMAINS` env var accepts comma-separated domains appended at
 startup.
 
+### Maven Repo Path Alignment
+The Maven local repo (`~/.m2`) is bind-mounted at the **host user's home path**
+inside the container (`$HOST_HOME/.m2`), not at `/home/coder/.m2`. The
+entrypoint creates a symlink `/home/coder/.m2 -> $HOST_HOME/.m2` and exports
+`MAVEN_OPTS=-Dmaven.repo.local=$HOST_HOME/.m2/repository`.
+
+This is required because some Maven plugins bake absolute paths into cache
+files — notably `spotless-maven-plugin`'s Equo P2 bundle-pool, which writes
+absolute paths to OSGi bundles inside `~/.m2/repository/dev/equo/p2-data/`.
+If those paths reference `/home/coder/...`, host-side IDE builds (IntelliJ)
+fail with `NoSuchFileException` because that user doesn't exist on the host.
+By mounting at the host's home path on both sides, cached paths resolve
+everywhere. `HOST_HOME` is set automatically by `start.sh`/`run.sh` from
+`$HOME`; falls back to `/home/coder` (original behavior) if unset.
+
+`exec.sh` and `claude.sh` forward `MAVEN_OPTS` via `-e` because `docker exec`
+runs commands without sourcing `/etc/profile.d/`.
+
 ### Claude Code Persistence
 Claude Code is installed into `/opt/claude-npm` (a named Docker volume). On
 subsequent starts, the entrypoint checks for updates in the background without

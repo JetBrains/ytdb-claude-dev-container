@@ -53,12 +53,15 @@ fi
 
 CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 
-# docker exec doesn't inherit compose environment — pass what's needed
+# docker exec doesn't inherit compose environment — pass what's needed.
+# MAVEN_OPTS pins maven.repo.local to the host-style path so absolute paths
+# baked into caches (Equo P2 bundle-pool, etc.) match the host.
 docker exec -it -u "$CODER_UID" -w "$CONTAINER_DIR" \
   -e HOME=/home/coder \
   -e "TERM=${TERM:-xterm-256color}" \
   -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
   -e "GH_TOKEN=${GITHUB_TOKEN:-}" \
+  -e "MAVEN_OPTS=${MAVEN_OPTS:-} -Dmaven.repo.local=$HOME/.m2/repository" \
   "$CONTAINER" claude --dangerously-skip-permissions "$@"
 
 # Save .claude.json to the persistent volume after session ends

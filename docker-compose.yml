@@ -13,6 +13,7 @@ services:
       - GIT_USER_EMAIL
       - CLAUDE_TASK
       - WORKSPACE_PATH
+      - HOST_HOME
       - DNS_FIREWALL
       - EXTRA_ALLOWED_DOMAINS
       - HCLOUD_TOKEN
@@ -32,8 +33,12 @@ services:
       # getcwd() returns paths matching git worktree metadata.
       # A /workspace symlink is created at startup for convenience.
       - ${WORKSPACE_PATH:-.}:${WORKSPACE_PATH:-/workspace}
-      # Maven local repository (shared with host)
-      - ${MAVEN_REPO:-~/.m2}:/home/coder/.m2
+      # Maven local repository (shared with host).
+      # Mounted at the host's home path inside the container so absolute paths
+      # baked into caches (e.g. Equo P2 bundle-pool used by spotless-maven-plugin)
+      # resolve identically on host and in the container. The entrypoint
+      # symlinks /home/coder/.m2 to this location for tools that read ~/.m2.
+      - ${MAVEN_REPO:-~/.m2}:${HOST_HOME:-/home/coder}/.m2
       # Personal Claude Code skills from host (~/.claude/skills)
       - ${CLAUDE_SKILLS_PATH:-~/.claude/skills}:/home/coder/.claude/skills
       # Personal Claude Code commands from host (~/.claude/commands)
