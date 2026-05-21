@@ -40,6 +40,9 @@ export HOST_HOME="$HOME"
 # Ensure personal skills/commands dirs exist (prevents Docker creating them as root)
 mkdir -p "${CLAUDE_SKILLS_PATH:-$HOME/.claude/skills}"
 mkdir -p "${CLAUDE_COMMANDS_PATH:-$HOME/.claude/commands}"
+# JetBrains Central CLI state — bind-mounted into the container so `jbcentral
+# login` can be done on the host and credentials are reused inside the container.
+mkdir -p "${JBCENTRAL_WIRE_PATH:-$HOME/.wire}"
 
 # Compute CPU limit as 85% of host CPUs (prevents container from starving the host)
 if [ -z "${CPU_LIMIT:-}" ]; then

@@ -209,6 +209,18 @@ else
   echo "[ok] Claude Code installed"
 fi
 
+# ── JetBrains Central CLI ────────────────────────────────────────────────────
+# `jbcentral login` requires a browser + reachable localhost callback, neither
+# of which work in this headless container. /home/coder/.wire is bind-mounted
+# from the host's ~/.wire (see docker-compose.yml) so the user logs in once on
+# the host and the container reuses the credentials.
+# `add claude` is idempotent and just rewires Claude Code's settings.json each
+# start in case the proxy secret rotated.
+if command -v jbcentral &>/dev/null; then
+  gosu coder jbcentral add claude &>/dev/null || true
+  echo "[ok] JetBrains Central CLI configured"
+fi
+
 # ── Periodic .claude.json sync to volume ─────────────────────────────────────
 # Runs in background; saves auth config every 10s so it survives restarts
 (while true; do

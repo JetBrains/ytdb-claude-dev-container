@@ -101,6 +101,13 @@ RUN ARCH=$(dpkg --print-architecture) \
     && curl -fsSL "https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-${ARCH}.tar.gz" \
        | tar xz -C /usr/local/bin hcloud
 
+# ── JetBrains Central CLI ────────────────────────────────────────────────────
+# Installs `jbcentral`, used to connect AI agents (Claude Code) to the
+# JetBrains AI Platform. Installed system-wide so all users get it; first-time
+# `jbcentral add claude` registration is done in the entrypoint as `coder`.
+RUN curl -fsSL https://central-cli.labs.jb.gg/install.sh \
+    | bash -s -- "" /usr/local/bin
+
 # ── Non-root user (UID/GID adjusted at runtime to match host) ────────────────
 # Remove the default 'ubuntu' user that occupies UID/GID 1000 in the base image
 RUN userdel -r ubuntu 2>/dev/null || true \

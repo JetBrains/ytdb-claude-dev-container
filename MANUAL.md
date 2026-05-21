@@ -164,6 +164,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | `HCLOUD_TOKEN` | No | Hetzner Cloud API token for managing cloud nodes via `hcloud` CLI |
 | `CPU_LIMIT` | No | Max CPUs the container may use (default: 85% of host CPUs). Set `0` for unlimited |
 | `IMAGE_MAX_AGE_DAYS` | No | Rebuild image if older than this many days (default: `7`). Set `0` to force rebuild every time |
+| `JBCENTRAL_WIRE_PATH` | No | Host path to mount as `/home/coder/.wire` (jbcentral state). Default: `~/.wire` |
 
 `WORKSPACE_PATH` is **not** needed in `.env`. It is determined automatically:
 - `start.sh` and `run.sh` accept it as a command-line argument
@@ -182,6 +183,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | Python 3 | System | With pip and venv |
 | Build tools | gcc, g++, make | `build-essential` |
 | Hetzner Cloud CLI | Latest | `hcloud` — manage Hetzner Cloud servers, SSH keys, networks |
+| JetBrains Central CLI | Latest | `jbcentral` — connect Claude Code to the JetBrains AI Platform; `jbcentral add claude` is run on every start |
 | Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, rsync, ping | Common dev tools |
 | dnsmasq + iptables | System | DNS-based domain whitelist firewall |
 
@@ -255,6 +257,7 @@ docker volume rm claude-code-npm claude-code-data
 |---|---|---|
 | Workspace (from `start.sh` / `run.sh` argument) | `/workspace` + symlink from host path | read-write |
 | `~/.m2` (or `MAVEN_REPO`) | `$HOST_HOME/.m2` (symlinked from `/home/coder/.m2`) | read-write |
+| `~/.wire` (or `JBCENTRAL_WIRE_PATH`) | `/home/coder/.wire` | read-write |
 | `./config/` | `/opt/config/` | read-only |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | read-write |
 
@@ -403,6 +406,48 @@ systemd-inhibit --list
 Authenticate interactively on first run — the login prompt appears automatically.
 The auth config (`.claude.json`) is synced to the `claude-data` volume every
 10 seconds and on session exit, so it persists across container restarts.
+
+### JetBrains AI Platform (jbcentral)
+
+The `jbcentral` CLI routes Claude Code through the JetBrains AI Platform proxy.
+On every container start the entrypoint runs `jbcentral add claude` (idempotent),
+which writes `apiKeyHelper` and `ANTHROPIC_BASE_URL` into `~/.claude/settings.json`
+so every Claude invocation auto-starts the proxy and routes through it.
+
+**Login must be done on the host**, not inside the container. The CLI's
+authentication flow needs a real browser (it calls `xdg-open`) and a reachable
+localhost OAuth callback — neither work in this headless egress-only container.
+The container's `~/.wire/` directory is bind-mounted from the host's `~/.wire/`,
+so once you log in on the host the container picks it up automatically.
+
+**One-time setup on the host:**
+
+```bash
+# 1. Install jbcentral on the host (same one-liner as in the container)
+curl -fsSL https://central-cli.labs.jb.gg/install.sh | bash
+#    Installs to ~/.local/bin/jbcentral — make sure that's on your PATH.
+
+# 2. Log in (opens a browser)
+jbcentral login
+
+# 3. Verify
+jbcentral status
+#    Expect: Auth connected
+```
+
+After that, start (or restart) the container — credentials are mounted in,
+and Claude Code routes through the proxy without any further action.
+
+Override the mount path with `JBCENTRAL_WIRE_PATH` in `.env` if needed
+(default: `$HOME/.wire`).
+
+Useful follow-up commands (run via `./exec.sh`, or directly on the host):
+
+- `jbcentral status` — proxy / auth / agent status
+- `jbcentral quota` — current usage quota
+- `jbcentral logout` — drop stored credentials (host-side; container picks it up)
+
+Docs: https://central-cli.labs.jb.gg/docs
 
 ### GitHub (git + gh CLI)
 
