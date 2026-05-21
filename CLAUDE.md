@@ -37,7 +37,7 @@ docker compose build
 
 # Quick smoke test (no API key needed)
 WORKSPACE_PATH=/tmp GITHUB_TOKEN="" docker compose run --rm -e GITHUB_TOKEN="" \
-  claude bash -c 'id && node --version && java --version && git --version'
+  claude bash -c 'id && node --version && "$JAVA_HOME"/bin/java --version && git --version'
 
 # Full test with real config (.env must be populated)
 ./start.sh ~/Projects/ytdb
