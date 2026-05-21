@@ -46,9 +46,11 @@ export HOST_HOME="$HOME"
 # Ensure personal skills/commands dirs exist (prevents Docker creating them as root)
 mkdir -p "${CLAUDE_SKILLS_PATH:-$HOME/.claude/skills}"
 mkdir -p "${CLAUDE_COMMANDS_PATH:-$HOME/.claude/commands}"
-# JetBrains Central CLI state — bind-mounted into the container so `jbcentral
-# login` can be done on the host and credentials are reused inside the container.
-mkdir -p "${JBCENTRAL_WIRE_PATH:-$HOME/.wire}"
+
+# JetBrains Central CLI: start host proxy and export proxy_secret/port. No-op
+# if jbcentral isn't installed on the host.
+source "$SCRIPT_DIR/lib/jbcentral.sh"
+jbcentral_proxy_up
 
 # Compute CPU limit as 85% of host CPUs (prevents container from starving the host)
 if [ -z "${CPU_LIMIT:-}" ]; then
@@ -62,6 +64,13 @@ echo ""
 # Build image (full rebuild if older than IMAGE_MAX_AGE_DAYS)
 source "$SCRIPT_DIR/lib/build.sh"
 build_image_if_needed "$SCRIPT_DIR/docker-compose.yml"
+
+# Forward the host's jbcentral proxy onto the docker bridge so the ephemeral
+# container can reach it via host.docker.internal.
+if [ -n "${JBC_PROXY_SECRET:-}" ]; then
+  jbcentral_forwarder_up "$SCRIPT_DIR"
+  trap 'jbcentral_forwarder_down "$SCRIPT_DIR"' EXIT
+fi
 
 # Run interactively — overrides the default idle command, removed on exit
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" run --rm claude \

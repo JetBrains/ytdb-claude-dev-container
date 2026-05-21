@@ -209,16 +209,31 @@ else
   echo "[ok] Claude Code installed"
 fi
 
-# ── JetBrains Central CLI ────────────────────────────────────────────────────
-# `jbcentral login` requires a browser + reachable localhost callback, neither
-# of which work in this headless container. /home/coder/.wire is bind-mounted
-# from the host's ~/.wire (see docker-compose.yml) so the user logs in once on
-# the host and the container reuses the credentials.
-# `add claude` is idempotent and just rewires Claude Code's settings.json each
-# start in case the proxy secret rotated.
-if command -v jbcentral &>/dev/null; then
-  gosu coder jbcentral add claude &>/dev/null || true
-  echo "[ok] JetBrains Central CLI configured"
+# ── JetBrains Central CLI routing ────────────────────────────────────────────
+# Auth tokens live in the host's gnome-keyring, which the container can't
+# reach. Instead, start.sh runs `jbcentral proxy start` on the host and
+# socat-forwards it onto the docker bridge gateway. start.sh passes the
+# static proxy_secret/proxy_port through as env vars; we write them straight
+# into Claude Code's settings.json so every claude invocation routes through
+# the host proxy via host.docker.internal. When JBC_PROXY_SECRET is unset
+# (jbcentral not installed on host, or login missing), we strip the keys so
+# Claude Code falls back to its direct Anthropic auth.
+if [ -n "${JBC_PROXY_SECRET:-}" ]; then
+  JBC_PROXY_PORT="${JBC_PROXY_PORT:-19516}"
+  JBC_URL="http://host.docker.internal:${JBC_PROXY_PORT}/wire/${JBC_PROXY_SECRET}/claude-code/anthropic"
+  JBC_HELPER="echo ${JBC_PROXY_SECRET}"
+  jq --arg url "$JBC_URL" --arg helper "$JBC_HELPER" \
+    '.env = (.env // {}) | .env.ANTHROPIC_BASE_URL = $url | .apiKeyHelper = $helper' \
+    "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+  chown coder:coder "$SETTINGS_FILE"
+  echo "[ok] Claude routed via JetBrains Central host proxy ($JBC_PROXY_PORT)"
+else
+  if jq -e '.apiKeyHelper or .env.ANTHROPIC_BASE_URL' "$SETTINGS_FILE" >/dev/null 2>&1; then
+    jq 'del(.apiKeyHelper) | del(.env.ANTHROPIC_BASE_URL)' \
+      "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+    chown coder:coder "$SETTINGS_FILE"
+    echo "[ok] JetBrains Central routing disabled (JBC_PROXY_SECRET unset)"
+  fi
 fi
 
 # ── Periodic .claude.json sync to volume ─────────────────────────────────────

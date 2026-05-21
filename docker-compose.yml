@@ -24,6 +24,10 @@ services:
       - TERM
       - COLORTERM
       - CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+      # JetBrains Central CLI: host-side start.sh sets these from ~/.wire/config.json
+      # so the entrypoint can wire Claude Code through the host proxy.
+      - JBC_PROXY_SECRET
+      - JBC_PROXY_PORT
     volumes:
       # Persistent Claude Code npm installation (survives rebuilds)
       - claude-npm:/opt/claude-npm
@@ -43,11 +47,6 @@ services:
       - ${CLAUDE_SKILLS_PATH:-~/.claude/skills}:/home/coder/.claude/skills
       # Personal Claude Code commands from host (~/.claude/commands)
       - ${CLAUDE_COMMANDS_PATH:-~/.claude/commands}:/home/coder/.claude/commands
-      # JetBrains Central CLI state (~/.wire) shared with host so `jbcentral
-      # login` can be done on the host (where a browser exists) and the
-      # container reuses the credentials. The directory is auto-created by
-      # start.sh / run.sh so Docker doesn't create it as root.
-      - ${JBCENTRAL_WIRE_PATH:-~/.wire}:/home/coder/.wire
       # DNS firewall domain whitelist (directory mount so inode-replacing
       # edits on the host are visible immediately — file mounts go stale)
       - ./config:/opt/config:ro

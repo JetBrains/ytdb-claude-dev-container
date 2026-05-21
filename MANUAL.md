@@ -164,7 +164,8 @@ Set these in `.env` (loaded automatically by all scripts).
 | `HCLOUD_TOKEN` | No | Hetzner Cloud API token for managing cloud nodes via `hcloud` CLI |
 | `CPU_LIMIT` | No | Max CPUs the container may use (default: 85% of host CPUs). Set `0` for unlimited |
 | `IMAGE_MAX_AGE_DAYS` | No | Rebuild image if older than this many days (default: `7`). Set `0` to force rebuild every time |
-| `JBCENTRAL_WIRE_PATH` | No | Host path to mount as `/home/coder/.wire` (jbcentral state). Default: `~/.wire` |
+| `JBC_PROXY_SECRET` | No | Auto-set by `start.sh` / `run.sh` from `~/.wire/config.json`. Routes Claude Code through the host `jbcentral` proxy. Unset to bypass. |
+| `JBC_PROXY_PORT` | No | Companion to `JBC_PROXY_SECRET`. Default: `19516` |
 
 `WORKSPACE_PATH` is **not** needed in `.env`. It is determined automatically:
 - `start.sh` and `run.sh` accept it as a command-line argument
@@ -257,7 +258,6 @@ docker volume rm claude-code-npm claude-code-data
 |---|---|---|
 | Workspace (from `start.sh` / `run.sh` argument) | `/workspace` + symlink from host path | read-write |
 | `~/.m2` (or `MAVEN_REPO`) | `$HOST_HOME/.m2` (symlinked from `/home/coder/.m2`) | read-write |
-| `~/.wire` (or `JBCENTRAL_WIRE_PATH`) | `/home/coder/.wire` | read-write |
 | `./config/` | `/opt/config/` | read-only |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | read-write |
 
@@ -410,42 +410,52 @@ The auth config (`.claude.json`) is synced to the `claude-data` volume every
 ### JetBrains AI Platform (jbcentral)
 
 The `jbcentral` CLI routes Claude Code through the JetBrains AI Platform proxy.
-On every container start the entrypoint runs `jbcentral add claude` (idempotent),
-which writes `apiKeyHelper` and `ANTHROPIC_BASE_URL` into `~/.claude/settings.json`
-so every Claude invocation auto-starts the proxy and routes through it.
+Because jbcentral stores OAuth tokens in the host's gnome-keyring (via libsecret
++ D-Bus), and we deliberately do not mount the host session bus into the
+container, the proxy itself runs on the host. `start.sh` / `run.sh` set up the
+plumbing automatically:
 
-**Login must be done on the host**, not inside the container. The CLI's
-authentication flow needs a real browser (it calls `xdg-open`) and a reachable
-localhost OAuth callback — neither work in this headless egress-only container.
-The container's `~/.wire/` directory is bind-mounted from the host's `~/.wire/`,
-so once you log in on the host the container picks it up automatically.
+1. **Host proxy**: `jbcentral proxy start` is launched on the host. It uses your
+   host gnome-keyring for auth (you logged in once with `jbcentral login`).
+2. **socat forwarder**: starts on the docker network's bridge gateway IP,
+   forwarding to host's `127.0.0.1:19516`. The container reaches it via
+   `host.docker.internal`.
+3. **Container entrypoint**: reads `JBC_PROXY_SECRET` / `JBC_PROXY_PORT` from
+   the environment (set by `start.sh`) and writes them straight into
+   `~/.claude/settings.json` as `apiKeyHelper` + `ANTHROPIC_BASE_URL`.
+
+No `~/.wire/` bind mount and no `jbcentral` invocations inside the container —
+just network access to the host proxy via the docker bridge.
 
 **One-time setup on the host:**
 
 ```bash
-# 1. Install jbcentral on the host (same one-liner as in the container)
+# 1. Install jbcentral on the host
 curl -fsSL https://central-cli.labs.jb.gg/install.sh | bash
 #    Installs to ~/.local/bin/jbcentral — make sure that's on your PATH.
 
-# 2. Log in (opens a browser)
-jbcentral login
+# 2. Install socat (required by start.sh / run.sh to bridge the proxy)
+sudo dnf install -y socat
 
-# 3. Verify
-jbcentral status
-#    Expect: Auth connected
+# 3. Log in (opens a browser; tokens go into your gnome-keyring)
+jbcentral login
+jbcentral status     # expect: Auth: JetBrains AI Ultimate (or your tier)
 ```
 
-After that, start (or restart) the container — credentials are mounted in,
-and Claude Code routes through the proxy without any further action.
+After that, every `./start.sh ~/Projects` invocation auto-starts the host
+proxy, runs the socat forwarder, and patches `settings.json` inside the
+container. `./stop.sh` kills the socat forwarder (the host proxy daemon
+stays running, so the next `start.sh` is instant).
 
-Override the mount path with `JBCENTRAL_WIRE_PATH` in `.env` if needed
-(default: `$HOME/.wire`).
+If `jbcentral` or `socat` isn't on the host, the launchers print a warning and
+skip the wiring — `settings.json` is cleaned up and Claude Code falls back to
+its direct Anthropic auth.
 
-Useful follow-up commands (run via `./exec.sh`, or directly on the host):
+Useful commands on the **host**:
 
 - `jbcentral status` — proxy / auth / agent status
 - `jbcentral quota` — current usage quota
-- `jbcentral logout` — drop stored credentials (host-side; container picks it up)
+- `jbcentral logout` — drop stored credentials
 
 Docs: https://central-cli.labs.jb.gg/docs
 

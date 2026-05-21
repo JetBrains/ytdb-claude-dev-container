@@ -1,5 +1,6 @@
 .env
 .inhibit.pid
+.jbcentral-socat.pid
 .workspace_path
 config/allowed-domains.local.txt
 config/mcp-servers.local.json
