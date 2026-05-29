@@ -106,6 +106,16 @@ a native KDE/GNOME notification pops up on the host. On headless hosts
 Note: D-Bus access lets the container send any notifications/desktop actions
 your session bus exposes — fine for a single-user dev box.
 
+### Python Virtualenv (Persistent pip)
+A dedicated venv at `/opt/claude-venv` (named volume `claude-code-pip`) lets the
+agent `pip install` extra Python libraries that persist across container
+recreation, mirroring the `/opt/claude-npm` prefix for npm. Its `bin/` is first
+on `PATH` (set in the Dockerfile), so `python`/`python3`/`pip` resolve to the
+venv and installs land inside it — sidestepping PEP 668's
+`externally-managed-environment` block on Ubuntu's system interpreter. The venv
+is created at runtime by the entrypoint (not in the Dockerfile, since the volume
+mount shadows image contents) and only when missing.
+
 ### Claude Code Persistence
 Claude Code is installed into `/opt/claude-npm` (a named Docker volume). On
 subsequent starts, the entrypoint checks for updates in the background without

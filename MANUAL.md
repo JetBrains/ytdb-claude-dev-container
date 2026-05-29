@@ -181,7 +181,7 @@ Set these in `.env` (loaded automatically by all scripts).
 | Git + git-lfs | System | With `gh` CLI for GitHub API |
 | Docker CLI | Latest | Compose + Buildx plugins |
 | async-profiler | 4.3 | Java profiler (`asprof` on PATH) |
-| Python 3 | System | With pip and venv |
+| Python 3 | System | With pip and venv; a persistent venv at `/opt/claude-venv` is first on PATH so `pip install` works and survives recreation |
 | Build tools | gcc, g++, make | `build-essential` |
 | Hetzner Cloud CLI | Latest | `hcloud` — manage Hetzner Cloud servers, SSH keys, networks |
 | JetBrains Central CLI | Latest | `jbcentral` — connect Claude Code to the JetBrains AI Platform; `jbcentral add claude` is run on every start |
@@ -234,6 +234,7 @@ symlink without any path translation.
 | Volume | Container Path | Contents |
 |---|---|---|
 | `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation (includes maven-indexer-mcp) |
+| `claude-code-pip` | `/opt/claude-venv` | Python virtualenv for agent-installed pip packages |
 | `claude-code-data` | `/home/coder/.claude` | Claude Code config, conversation history, and auth |
 
 These survive container restarts, image rebuilds, and `stop.sh`. Claude Code

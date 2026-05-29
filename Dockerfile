@@ -2,7 +2,7 @@ FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     NPM_CONFIG_PREFIX=/opt/claude-npm \
-    PATH="/home/coder/.local/bin:/opt/async-profiler/bin:/opt/claude-npm/bin:${PATH}" \
+    PATH="/opt/claude-venv/bin:/home/coder/.local/bin:/opt/async-profiler/bin:/opt/claude-npm/bin:${PATH}" \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
     TZ=Europe/Prague
@@ -116,8 +116,8 @@ RUN userdel -r ubuntu 2>/dev/null || true \
     && useradd -m -u 1000 -g 1000 -s /bin/bash coder
 
 # ── Directory structure ──────────────────────────────────────────────────────
-RUN mkdir -p /opt/claude-npm /workspace /opt/scripts /home/coder/.claude \
-    && chown -R coder:coder /opt/claude-npm /home/coder
+RUN mkdir -p /opt/claude-npm /opt/claude-venv /workspace /opt/scripts /home/coder/.claude \
+    && chown -R coder:coder /opt/claude-npm /opt/claude-venv /home/coder
 
 COPY entrypoint.sh /opt/scripts/entrypoint.sh
 COPY setup-dns-firewall.sh /opt/scripts/setup-dns-firewall.sh

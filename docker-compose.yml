@@ -33,6 +33,8 @@ services:
     volumes:
       # Persistent Claude Code npm installation (survives rebuilds)
       - claude-npm:/opt/claude-npm
+      # Persistent Python virtualenv for agent-installed pip packages
+      - claude-venv:/opt/claude-venv
       # Persistent Claude Code config / conversation history
       - claude-data:/home/coder/.claude
       # Project worktree — mounted at the host absolute path so that
@@ -79,5 +81,7 @@ networks:
 volumes:
   claude-npm:
     name: claude-code-npm
+  claude-venv:
+    name: claude-code-pip
   claude-data:
     name: claude-code-data

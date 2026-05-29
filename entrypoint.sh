@@ -94,7 +94,7 @@ fi
 
 # Own the persistent volumes / home. -R is safe here: chown without -L treats
 # symlinks as files (doesn't recurse into the maven cache via the symlink).
-chown -R coder:coder /home/coder /opt/claude-npm
+chown -R coder:coder /home/coder /opt/claude-npm /opt/claude-venv
 echo "[ok] Running as UID=$(id -u coder) GID=$(id -g coder)"
 
 # ── Docker socket ────────────────────────────────────────────────────────────
@@ -203,6 +203,24 @@ jq '.hooks = (.hooks // {})
 chown -R coder:coder "$SETTINGS_DIR"
 echo "[ok] Global permissions configured"
 echo "[ok] Host notification hook installed"
+
+# ── Python virtualenv (persistent pip) ───────────────────────────────────────
+# A dedicated venv at /opt/claude-venv (named volume claude-code-pip) lets the
+# agent `pip install` extra Python libraries that persist across container
+# recreation — mirroring the persistent npm prefix at /opt/claude-npm. Its bin
+# dir is first on PATH (set in the Dockerfile), so `python`, `python3`, and
+# `pip` resolve to the venv; installs land inside it and sidestep PEP 668's
+# "externally-managed-environment" block on the system interpreter.
+# Created at runtime (not in the Dockerfile) because the volume mount shadows
+# image contents. Idempotent: only builds when the venv is missing.
+if [ ! -x /opt/claude-venv/bin/python ]; then
+  echo "     Creating Python virtualenv (first run) ..."
+  gosu coder python3 -m venv /opt/claude-venv
+  gosu coder /opt/claude-venv/bin/pip install --quiet --upgrade pip setuptools wheel 2>/dev/null || true
+  echo "[ok] Python virtualenv created (/opt/claude-venv)"
+else
+  echo "[ok] Python virtualenv found (/opt/claude-venv)"
+fi
 
 # ── Claude Code install / update ─────────────────────────────────────────────
 if gosu coder bash -c 'command -v claude' &>/dev/null; then
