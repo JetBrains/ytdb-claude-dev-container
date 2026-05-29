@@ -388,6 +388,26 @@ The container has `privileged: true` and the host Docker socket is mounted.
 Claude Code can build and run Docker containers — they execute as sibling
 containers on your host Docker daemon.
 
+### Host Desktop Notifications
+
+When Claude needs your attention (idle prompt, permission request, etc.), it
+pops a native notification on your host desktop (KDE Plasma, GNOME, etc.).
+
+How it works:
+
+- The host's D-Bus session socket (`$XDG_RUNTIME_DIR/bus`) is bind-mounted
+  into the container at `/run/host-bus`.
+- `start.sh` / `run.sh` set `HOST_DBUS_SOCKET` to the host path; if the socket
+  doesn't exist (headless host) it falls back to `/dev/null` and the hook
+  silently no-ops.
+- The entrypoint registers a `Notification` hook in
+  `~/.claude/settings.json` that runs `/opt/scripts/notify-host.sh`, which
+  calls `notify-send` against the mounted bus.
+
+Security note: D-Bus session access lets the container send any
+notifications/desktop actions your session bus exposes. This is intended for
+single-user dev machines.
+
 ### Sleep Inhibitor (Fedora/Plasma)
 
 `start.sh` runs `systemd-inhibit` in the background to prevent the system from

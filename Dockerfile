@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo locales gosu \
     dnsmasq iptables iputils-ping rsync \
     sshpass expect \
+    libnotify-bin \
     && locale-gen en_US.UTF-8 \
     && ln -sf /usr/share/zoneinfo/Europe/Prague /etc/localtime \
     && echo "Europe/Prague" > /etc/timezone \
@@ -120,8 +121,9 @@ RUN mkdir -p /opt/claude-npm /workspace /opt/scripts /home/coder/.claude \
 
 COPY entrypoint.sh /opt/scripts/entrypoint.sh
 COPY setup-dns-firewall.sh /opt/scripts/setup-dns-firewall.sh
+COPY notify-host.sh /opt/scripts/notify-host.sh
 COPY config/allowed-domains.txt /opt/config/allowed-domains.txt
-RUN chmod +x /opt/scripts/entrypoint.sh /opt/scripts/setup-dns-firewall.sh
+RUN chmod +x /opt/scripts/entrypoint.sh /opt/scripts/setup-dns-firewall.sh /opt/scripts/notify-host.sh
 
 WORKDIR /workspace
 ENTRYPOINT ["/opt/scripts/entrypoint.sh"]

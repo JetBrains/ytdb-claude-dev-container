@@ -27,6 +27,7 @@ persistent Claude Code installation.
 | `config/mcp-servers.json` | Project-wide MCP server definitions (checked in) |
 | `config/mcp-servers.local.json` | User-specific MCP server overrides (gitignored) |
 | `setup-dns-firewall.sh` | DNS firewall setup (dnsmasq + iptables) |
+| `notify-host.sh` | Claude Code `Notification` hook → forwards to host D-Bus |
 | `MANUAL.md` | Full user-facing documentation |
 
 ## Build and Test
@@ -93,6 +94,17 @@ everywhere. `HOST_HOME` is set automatically by `start.sh`/`run.sh` from
 
 `exec.sh` and `claude.sh` forward `MAVEN_OPTS` via `-e` because `docker exec`
 runs commands without sourcing `/etc/profile.d/`.
+
+### Host Desktop Notifications
+The host's D-Bus session socket (`$XDG_RUNTIME_DIR/bus`) is bind-mounted into
+the container at `/run/host-bus`, and `DBUS_SESSION_BUS_ADDRESS` is set to
+point at it. The entrypoint registers a `Notification` hook in
+`~/.claude/settings.json` that runs `/opt/scripts/notify-host.sh` (a
+`libnotify` `notify-send` wrapper). When Claude needs the user's attention,
+a native KDE/GNOME notification pops up on the host. On headless hosts
+`HOST_DBUS_SOCKET` falls back to `/dev/null` and the hook silently no-ops.
+Note: D-Bus access lets the container send any notifications/desktop actions
+your session bus exposes — fine for a single-user dev box.
 
 ### Claude Code Persistence
 Claude Code is installed into `/opt/claude-npm` (a named Docker volume). On

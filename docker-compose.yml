@@ -28,6 +28,8 @@ services:
       # so the entrypoint can wire Claude Code through the host proxy.
       - JBC_PROXY_SECRET
       - JBC_PROXY_PORT
+      # Host desktop notifications via the mounted D-Bus session socket
+      - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/host-bus
     volumes:
       # Persistent Claude Code npm installation (survives rebuilds)
       - claude-npm:/opt/claude-npm
@@ -52,6 +54,11 @@ services:
       - ./config:/opt/config:ro
       # Docker socket from host (Docker-in-Docker via socket sharing)
       - /var/run/docker.sock:/var/run/docker.sock
+      # Host D-Bus session socket — lets the container send desktop
+      # notifications (Notification hook → notify-send → host's notifier).
+      # Falls back to /dev/null when the host has no session bus (headless),
+      # in which case the hook silently no-ops.
+      - ${HOST_DBUS_SOCKET:-/dev/null}:/run/host-bus
     # Default: idle process for multi-terminal workflow (start.sh + exec.sh)
     # Overridden by run.sh for single-terminal interactive mode
     command: ["sleep", "infinity"]

@@ -191,8 +191,18 @@ if ! jq -e '.permissions.allow' "$SETTINGS_FILE" 2>/dev/null | grep -q '"Bash"';
   jq '.permissions.allow = ((.permissions.allow // []) + ["Bash"] | unique)' \
     "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
 fi
+
+# ── Host desktop notification hook ───────────────────────────────────────────
+# Forward Claude's user-attention notifications to the host desktop via the
+# mounted D-Bus session socket (see /run/host-bus + docker-compose.yml).
+# Idempotent: replaces any existing Notification entry pointing at the wrapper.
+jq '.hooks = (.hooks // {})
+    | .hooks.Notification = [{matcher: "", hooks: [{type: "command", command: "/opt/scripts/notify-host.sh"}]}]' \
+  "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+
 chown -R coder:coder "$SETTINGS_DIR"
 echo "[ok] Global permissions configured"
+echo "[ok] Host notification hook installed"
 
 # ── Claude Code install / update ─────────────────────────────────────────────
 if gosu coder bash -c 'command -v claude' &>/dev/null; then

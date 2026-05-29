@@ -43,6 +43,13 @@ export WORKSPACE_PATH="$WORKSPACE"
 # Maven caches (e.g. Equo P2 bundle-pool) resolve in both worlds.
 export HOST_HOME="$HOME"
 
+# Host D-Bus session socket — used by the Notification hook inside the
+# container to push desktop notifications back to the host (KDE/GNOME).
+# Falls back to /dev/null on headless hosts; the hook then no-ops silently.
+HOST_DBUS_SOCKET="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/bus"
+[ -S "$HOST_DBUS_SOCKET" ] || HOST_DBUS_SOCKET=/dev/null
+export HOST_DBUS_SOCKET
+
 # Ensure personal skills/commands dirs exist (prevents Docker creating them as root)
 mkdir -p "${CLAUDE_SKILLS_PATH:-$HOME/.claude/skills}"
 mkdir -p "${CLAUDE_COMMANDS_PATH:-$HOME/.claude/commands}"
