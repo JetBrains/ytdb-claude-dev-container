@@ -233,7 +233,7 @@ symlink without any path translation.
 
 | Volume | Container Path | Contents |
 |---|---|---|
-| `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation (includes maven-indexer-mcp) |
+| `claude-code-npm` | `/opt/claude-npm` | Claude Code npm installation |
 | `claude-code-pip` | `/opt/claude-venv` | Python virtualenv for agent-installed pip packages |
 | `claude-code-data` | `/home/coder/.claude` | Claude Code config, conversation history, and auth |
 
@@ -361,9 +361,9 @@ Both files share the same format:
 
 ```json
 {
-  "npmInstall": ["maven-indexer-mcp@latest"],
+  "npmInstall": ["some-mcp-package@latest"],
   "mcpServers": {
-    "maven-indexer": { "command": "maven-indexer-mcp", "args": [] }
+    "some-server": { "command": "some-mcp-command", "args": [] }
   },
   "removeMcpServers": ["stale-server-name"]
 }
@@ -379,9 +379,7 @@ At container start the entrypoint processes the project file first, then the
 local file. Local entries override project entries for the same server name.
 A template is provided at `config/mcp-servers.local.json.example`.
 
-The project ships with [maven-indexer-mcp](https://github.com/tangcent/maven-indexer-mcp)
-pre-configured, which indexes `~/.m2` JARs for class search, method signatures,
-decompilation, and interface implementation discovery.
+No MCP servers are pre-configured by default; add your own via the files above.
 
 ### Docker-in-Docker
 

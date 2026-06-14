@@ -1,16 +1,10 @@
 {
   "_comment": "Project-wide MCP servers (checked into git). Merged into ~/.claude.json at container start.",
-  "npmInstall": [
-    "maven-indexer-mcp@latest"
-  ],
-  "mcpServers": {
-    "maven-indexer": {
-      "command": "maven-indexer-mcp",
-      "args": []
-    }
-  },
+  "npmInstall": [],
+  "mcpServers": {},
   "removeMcpServers": [
     "code-index",
-    "maven"
+    "maven",
+    "maven-indexer"
   ]
 }
