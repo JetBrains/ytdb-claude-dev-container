@@ -53,6 +53,20 @@ fi
 
 CODER_UID=$(docker exec "$CONTAINER" id -u coder)
 
+# ── tmux wrapper ──
+# Run Claude inside a per-worktree tmux session so a closed terminal *detaches*
+# instead of orphaning the process. Re-running claude.sh from the same worktree
+# reattaches the live session (`tmux new-session -A`: attach if exists, else
+# create). Detach on purpose with Ctrl-b d. Set CLAUDE_TMUX=0 to bypass and run
+# claude directly (original behavior).
+CLAUDE_CMD=(claude --dangerously-skip-permissions "$@")
+if [ "${CLAUDE_TMUX:-1}" != "0" ]; then
+  # Stable session name derived from the worktree path → reattach, not duplicate
+  SESSION="claude${REL_PATH//\//-}"
+  SESSION="${SESSION//[^A-Za-z0-9_-]/-}"
+  CLAUDE_CMD=(tmux new-session -A -s "$SESSION" "${CLAUDE_CMD[@]}")
+fi
+
 # docker exec doesn't inherit compose environment — pass what's needed.
 # MAVEN_OPTS pins maven.repo.local to the host-style path so absolute paths
 # baked into caches (Equo P2 bundle-pool, etc.) match the host.
@@ -62,7 +76,7 @@ docker exec -it -u "$CODER_UID" -w "$CONTAINER_DIR" \
   -e "GITHUB_TOKEN=${GITHUB_TOKEN:-}" \
   -e "GH_TOKEN=${GITHUB_TOKEN:-}" \
   -e "MAVEN_OPTS=${MAVEN_OPTS:-} -Dmaven.repo.local=$HOME/.m2/repository" \
-  "$CONTAINER" claude --dangerously-skip-permissions "$@"
+  "$CONTAINER" "${CLAUDE_CMD[@]}"
 
 # Save .claude.json to the persistent volume after session ends
 docker exec "$CONTAINER" \
