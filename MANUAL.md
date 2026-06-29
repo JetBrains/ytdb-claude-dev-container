@@ -184,7 +184,6 @@ Set these in `.env` (loaded automatically by all scripts).
 | Python 3 | System | With pip and venv; a persistent venv at `/opt/claude-venv` is first on PATH so `pip install` works and survives recreation |
 | Build tools | gcc, g++, make | `build-essential` |
 | Hetzner Cloud CLI | Latest | `hcloud` — manage Hetzner Cloud servers, SSH keys, networks |
-| JetBrains Central CLI | Latest | `jbcentral` — connect Claude Code to the JetBrains AI Platform; `jbcentral add claude` is run on every start |
 | Utilities | jq, ripgrep, fd, tree, tmux, vim-tiny, rsync, ping | Common dev tools |
 | dnsmasq + iptables | System | DNS-based domain whitelist firewall |
 
